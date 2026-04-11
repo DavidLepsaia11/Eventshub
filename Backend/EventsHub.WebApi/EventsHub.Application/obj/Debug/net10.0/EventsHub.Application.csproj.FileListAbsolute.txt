@@ -1,0 +1,15 @@
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\bin\Debug\net10.0\EventsHub.Application.deps.json
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\bin\Debug\net10.0\EventsHub.Application.dll
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\bin\Debug\net10.0\EventsHub.Application.pdb
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\bin\Debug\net10.0\EventsHub.Domain.dll
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\bin\Debug\net10.0\EventsHub.Domain.pdb
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\EventsHub.Application.csproj.AssemblyReference.cache
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\EventsHub.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\EventsHub.Application.AssemblyInfoInputs.cache
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\EventsHub.Application.AssemblyInfo.cs
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\EventsHub.Application.csproj.CoreCompileInputs.cache
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\EventsHu.55AB9268.Up2Date
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\EventsHub.Application.dll
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\refint\EventsHub.Application.dll
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\EventsHub.Application.pdb
+C:\Users\PCZONE.GE\OneDrive-CaucasusUniversity\Desktop\EventsProjectAI\Backend\EventsHub.WebApi\EventsHub.Application\obj\Debug\net10.0\ref\EventsHub.Application.dll
