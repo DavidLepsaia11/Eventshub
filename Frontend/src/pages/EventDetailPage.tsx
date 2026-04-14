@@ -8,6 +8,7 @@ import ErrorMessage from '@/components/ErrorMessage';
 import Badge from '@/components/Badge';
 import { MapPin, Calendar, Clock, ChevronRight, Edit, ArrowLeft } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { useAuth } from '@/context/AuthContext';
 
 const GRADIENTS = [
   'from-[#1E3A8A] via-[#2563EB] to-[#38BDF8]',
@@ -22,6 +23,7 @@ const EMOJIS = ['🎵', '🏆', '🎭', '🎪', '🎨', '💻'];
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const eventId = Number(id);
 
   const { data: event, isLoading, isError, error, refetch } = useQuery({
@@ -76,13 +78,15 @@ export default function EventDetailPage() {
           <Badge variant={event.isPublished ? 'published' : 'draft'} showIcon>
             {event.isPublished ? 'Published' : 'Draft'}
           </Badge>
-          <button
-            onClick={() => navigate(`/admin/events/${event.id}/edit`)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xs bg-white/20 backdrop-blur-sm border border-white/25 text-white text-[13px] font-semibold hover:bg-white/30 transition-colors"
-          >
-            <Edit className="w-[14px] h-[14px]" />
-            Edit Event
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => navigate(`/admin/events/${event.id}/edit`)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xs bg-white/20 backdrop-blur-sm border border-white/25 text-white text-[13px] font-semibold hover:bg-white/30 transition-colors"
+            >
+              <Edit className="w-[14px] h-[14px]" />
+              Edit Event
+            </button>
+          )}
         </div>
       </div>
 
@@ -201,13 +205,15 @@ export default function EventDetailPage() {
 
           {/* Actions */}
           <div className="px-5 pb-5 flex flex-col gap-2.5">
-            <button
-              onClick={() => navigate(`/admin/events/${event.id}/edit`)}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-sm bg-brand-600 text-white text-[14px] font-semibold hover:bg-brand-700 hover:-translate-y-px transition-all shadow-brand"
-            >
-              <Edit className="w-[15px] h-[15px]" />
-              Edit Event
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => navigate(`/admin/events/${event.id}/edit`)}
+                className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-sm bg-brand-600 text-white text-[14px] font-semibold hover:bg-brand-700 hover:-translate-y-px transition-all shadow-brand"
+              >
+                <Edit className="w-[15px] h-[15px]" />
+                Edit Event
+              </button>
+            )}
             <button
               onClick={() => navigate('/')}
               className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xs border border-slate-200 bg-white text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"

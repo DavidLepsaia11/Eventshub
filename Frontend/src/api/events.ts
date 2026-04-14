@@ -6,8 +6,23 @@ import type { EventDto, CreateEventDto, UpdateEventDto, CategoryDto } from '@/ty
 
 const BASE = import.meta.env.VITE_API_URL as string;
 
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('eventhub_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, options);
+  const isFormData = options?.body instanceof FormData;
+  const merged: RequestInit = {
+    ...options,
+    headers: {
+      // For FormData let the browser set Content-Type with boundary automatically
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...authHeaders(),
+      ...(options?.headers as Record<string, string> | undefined),
+    },
+  };
+  const res = await fetch(`${BASE}${path}`, merged);
 
   if (!res.ok) {
     let message = res.statusText;

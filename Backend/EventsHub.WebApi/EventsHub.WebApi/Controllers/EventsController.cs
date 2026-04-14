@@ -1,5 +1,6 @@
 ﻿using EventsHub.Application.DTOs;
 using EventsHub.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventsHub.WebApi.Controllers;
@@ -30,6 +31,7 @@ public class EventsController(IEventService eventService) : ControllerBase
 
     /// <summary>Creates a new event.</summary>
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(EventDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromForm] CreateEventDto dto, CancellationToken cancellationToken)
@@ -40,6 +42,7 @@ public class EventsController(IEventService eventService) : ControllerBase
 
     /// <summary>Updates an existing event.</summary>
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(EventDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -51,6 +54,7 @@ public class EventsController(IEventService eventService) : ControllerBase
 
     /// <summary>Deletes an event.</summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)

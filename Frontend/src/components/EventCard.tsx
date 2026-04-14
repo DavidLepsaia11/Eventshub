@@ -1,48 +1,86 @@
 // src/components/EventCard.tsx
 
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, Music2, Trophy, Drama, Tent, Palette, Cpu, UtensilsCrossed, Laugh, Briefcase, HeartPulse, type LucideIcon } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Badge from './Badge';
 import type { EventDto } from '@/types/event';
 
-// Deterministic gradient based on event id so each card feels distinct
-const GRADIENTS = [
-  'from-[#1E3A8A] via-[#2563EB] to-[#38BDF8]',   // blue / concert
-  'from-[#064E3B] via-[#059669] to-[#34D399]',     // green / sports
-  'from-[#4C1D95] via-[#7C3AED] to-[#A78BFA]',    // violet / theatre
-  'from-[#78350F] via-[#D97706] to-[#FCD34D]',    // amber / festival
-  'from-[#831843] via-[#E11D48] to-[#FB7185]',    // rose / art
-  'from-[#0C4A6E] via-[#0EA5E9] to-[#7DD3FC]',   // cyan / tech
+type BadgeVariant = 'published' | 'draft' | 'brand' | 'amber' | 'red' | 'violet' | 'cyan' | 'slate' | 'green';
+
+// ─── Category metadata ───────────────────────────────────────────────────────
+
+interface CategoryMeta {
+  gradient: string;
+  emoji: string;
+  icon: LucideIcon;
+  badge: BadgeVariant;
+}
+
+const DEFAULT_GRADIENTS = [
+  'from-[#1E3A8A] via-[#2563EB] to-[#38BDF8]',
+  'from-[#064E3B] via-[#059669] to-[#34D399]',
+  'from-[#4C1D95] via-[#7C3AED] to-[#A78BFA]',
+  'from-[#78350F] via-[#D97706] to-[#FCD34D]',
+  'from-[#831843] via-[#E11D48] to-[#FB7185]',
+  'from-[#0C4A6E] via-[#0EA5E9] to-[#7DD3FC]',
 ];
 
-const EMOJIS = ['🎵', '🏆', '🎭', '🎪', '🎨', '💻'];
+const CATEGORY_MAP: Array<{ keys: string[]; meta: CategoryMeta }> = [
+  { keys: ['concert', 'music'],          meta: { gradient: DEFAULT_GRADIENTS[0], emoji: '🎵', icon: Music2,         badge: 'brand'  } },
+  { keys: ['sport', 'football', 'match'],meta: { gradient: DEFAULT_GRADIENTS[1], emoji: '🏆', icon: Trophy,         badge: 'green'  } },
+  { keys: ['theat', 'drama', 'musical'], meta: { gradient: DEFAULT_GRADIENTS[2], emoji: '🎭', icon: Drama,          badge: 'violet' } },
+  { keys: ['festival', 'fair'],          meta: { gradient: DEFAULT_GRADIENTS[3], emoji: '🎪', icon: Tent,           badge: 'amber'  } },
+  { keys: ['art', 'culture', 'exhibit'], meta: { gradient: DEFAULT_GRADIENTS[4], emoji: '🎨', icon: Palette,        badge: 'red'    } },
+  { keys: ['tech', 'developer', 'code'], meta: { gradient: DEFAULT_GRADIENTS[5], emoji: '💻', icon: Cpu,            badge: 'cyan'   } },
+  { keys: ['food', 'drink', 'culinary'], meta: { gradient: DEFAULT_GRADIENTS[3], emoji: '🍽️', icon: UtensilsCrossed, badge: 'amber'  } },
+  { keys: ['comedy', 'stand-up', 'humor'],meta:{ gradient: DEFAULT_GRADIENTS[0], emoji: '😂', icon: Laugh,          badge: 'brand'  } },
+  { keys: ['business', 'conference'],    meta: { gradient: DEFAULT_GRADIENTS[5], emoji: '💼', icon: Briefcase,      badge: 'cyan'   } },
+  { keys: ['health', 'wellness', 'fit'], meta: { gradient: DEFAULT_GRADIENTS[1], emoji: '🏃', icon: HeartPulse,     badge: 'green'  } },
+];
+
+function getCategoryMeta(categoryName: string | null | undefined, fallbackIdx: number): CategoryMeta {
+  if (categoryName) {
+    const n = categoryName.toLowerCase();
+    for (const { keys, meta } of CATEGORY_MAP) {
+      if (keys.some((k) => n.includes(k))) return meta;
+    }
+  }
+  return {
+    gradient: DEFAULT_GRADIENTS[fallbackIdx % DEFAULT_GRADIENTS.length],
+    emoji: ['🎵','🏆','🎭','🎪','🎨','💻'][fallbackIdx % 6],
+    icon: Calendar,
+    badge: 'brand',
+  };
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 interface EventCardProps {
   event: EventDto;
+  /** true → show Published/Draft status badge (admin view)
+   *  false (default) → show category badge (explore view) */
+  showStatus?: boolean;
 }
 
 function formatDateRange(start: string, end: string): string {
   const s = parseISO(start);
   const e = parseISO(end);
   if (format(s, 'yyyy-MM-dd') === format(e, 'yyyy-MM-dd')) {
-    return format(s, 'MMM d, yyyy');
+    return format(s, 'EEE, MMM d, yyyy · HH:mm');
   }
   return `${format(s, 'MMM d')} – ${format(e, 'MMM d, yyyy')}`;
 }
 
-export default function EventCard({ event }: EventCardProps) {
+export default function EventCard({ event, showStatus = false }: EventCardProps) {
   const navigate = useNavigate();
-  const idx = event.id % GRADIENTS.length;
+  const meta = getCategoryMeta(event.category?.name, event.id);
+  const CategoryIcon = meta.icon;
 
   return (
     <article
       onClick={() => navigate(`/events/${event.id}`)}
-      className="
-        bg-white rounded-lg overflow-hidden shadow-sm border border-slate-200
-        transition-all duration-[220ms] cursor-pointer relative
-        hover:shadow-xl hover:-translate-y-1 hover:border-brand-200
-      "
+      className="bg-white rounded-lg overflow-hidden shadow-sm border border-slate-200 transition-all duration-[220ms] cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-brand-200"
     >
       {/* Cover */}
       <div className="w-full h-[175px] relative overflow-hidden">
@@ -50,21 +88,28 @@ export default function EventCard({ event }: EventCardProps) {
           <img
             src={event.coverImageUrl.startsWith('http') ? event.coverImageUrl : `${import.meta.env.VITE_API_URL}${event.coverImageUrl}`}
             alt={event.title}
-            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div
-            className={`w-full h-full bg-gradient-to-br ${GRADIENTS[idx]} flex items-center justify-center text-[52px] transition-transform duration-300 hover:scale-105`}
-          >
-            {EMOJIS[idx]}
+          <div className={`w-full h-full bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-[52px] transition-transform duration-300`}>
+            {meta.emoji}
           </div>
         )}
 
-        {/* Published badge overlay */}
+        {/* Cover badge */}
         <div className="absolute top-3 left-3">
-          <Badge variant={event.isPublished ? 'published' : 'draft'} showIcon>
-            {event.isPublished ? 'Published' : 'Draft'}
-          </Badge>
+          {showStatus ? (
+            <Badge variant={event.isPublished ? 'published' : 'draft'} showIcon>
+              {event.isPublished ? 'Published' : 'Draft'}
+            </Badge>
+          ) : (
+            event.category && (
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold backdrop-blur-sm bg-white/20 border border-white/25 text-white`}>
+                <CategoryIcon className="w-3 h-3" />
+                {event.category.name}
+              </span>
+            )
+          )}
         </div>
       </div>
 
@@ -87,18 +132,21 @@ export default function EventCard({ event }: EventCardProps) {
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-          <span className="text-[12px] text-slate-400 font-medium">
-            Added {format(parseISO(event.createdAt), 'MMM d, yyyy')}
-          </span>
+          {showStatus ? (
+            <span className="text-[12px] text-slate-400 font-medium">
+              Added {format(parseISO(event.createdAt), 'MMM d, yyyy')}
+            </span>
+          ) : (
+            <span className="text-[12px] text-slate-400 font-medium">
+              {format(parseISO(event.startDate), 'MMM d, yyyy')}
+            </span>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/events/${event.id}`); }}
-            className="
-              inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand-600
-              hover:text-brand-700 transition-colors
-            "
+            className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand-600 hover:text-brand-700 transition-colors"
           >
             View Details
-            <ArrowRight className="w-3.5 h-3.5" />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
       </div>

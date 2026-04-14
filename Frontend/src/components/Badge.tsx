@@ -2,7 +2,7 @@
 
 import { CheckCircle, Clock } from 'lucide-react';
 
-type BadgeVariant = 'published' | 'draft' | 'brand' | 'amber' | 'red' | 'violet' | 'cyan' | 'slate';
+type BadgeVariant = 'published' | 'draft' | 'brand' | 'amber' | 'red' | 'violet' | 'cyan' | 'slate' | 'green';
 
 interface BadgeProps {
   variant: BadgeVariant;
@@ -19,6 +19,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   violet:    'bg-violet-50 text-violet-600',
   cyan:      'bg-sky-50 text-sky-700',
   slate:     'bg-slate-100 text-slate-500',
+  green:     'bg-emerald-50 text-emerald-700',
 };
 
 export default function Badge({ variant, children, showIcon = false }: BadgeProps) {

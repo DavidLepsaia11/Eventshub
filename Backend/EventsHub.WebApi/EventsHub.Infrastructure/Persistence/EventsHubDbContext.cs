@@ -1,9 +1,11 @@
 using EventsHub.Domain.Entities;
+using EventsHub.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventsHub.Infrastructure.Persistence;
 
-public class EventsHubDbContext(DbContextOptions<EventsHubDbContext> options) : DbContext(options)
+public class EventsHubDbContext(DbContextOptions<EventsHubDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Category> Categories => Set<Category>();
