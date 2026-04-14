@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using EventsHub.Application.Interfaces;
+using EventsHub.Application.Interfaces.Services;
 using Microsoft.IdentityModel.Tokens;
 
 namespace EventsHub.WebApi.Services;

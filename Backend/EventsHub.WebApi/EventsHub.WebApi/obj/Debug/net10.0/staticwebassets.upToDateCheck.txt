@@ -1,2 +1,0 @@
-wwwroot\uploads\events\Coldplay-performing.jpg
-wwwroot\uploads\events\UEFA-Champions-League.jpeg

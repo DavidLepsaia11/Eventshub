@@ -1,5 +1,5 @@
 using EventsHub.Application.DTOs;
-using EventsHub.Application.Interfaces;
+using EventsHub.Application.Interfaces.Services;
 using EventsHub.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 
