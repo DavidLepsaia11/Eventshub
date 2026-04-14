@@ -13,22 +13,7 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "EventsHub.Application.DTOs.AuthResponseDto",
-        "MediaTypes": [
-          "application/json"
-        ],
-        "StatusCode": 200
-      },
-      {
-        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
-        "MediaTypes": [
-          "application/json"
-        ],
-        "StatusCode": 401
-      }
-    ]
+    "ReturnTypes": []
   },
   {
     "ContainingType": "EventsHub.WebApi.Controllers.AuthController",
@@ -44,22 +29,7 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "EventsHub.Application.DTOs.AuthResponseDto",
-        "MediaTypes": [
-          "application/json"
-        ],
-        "StatusCode": 200
-      },
-      {
-        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
-        "MediaTypes": [
-          "application/json"
-        ],
-        "StatusCode": 400
-      }
-    ]
+    "ReturnTypes": []
   },
   {
     "ContainingType": "EventsHub.WebApi.Controllers.CategoriesController",
@@ -308,7 +278,7 @@
   },
   {
     "ContainingType": "EventsHub.WebApi.Controllers.FavouritesController",
-    "Method": "GetMyFavourites",
+    "Method": "GetFavouritesByUserId",
     "RelativePath": "api/Favourites",
     "HttpMethod": "GET",
     "IsController": true,

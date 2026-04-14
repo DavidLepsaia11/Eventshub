@@ -1,5 +1,5 @@
 using EventsHub.Application.DTOs;
-using EventsHub.Application.Interfaces;
+using EventsHub.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventsHub.WebApi.Controllers;
