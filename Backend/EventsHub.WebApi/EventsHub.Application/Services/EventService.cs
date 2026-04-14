@@ -1,22 +1,36 @@
 using EventsHub.Application.DTOs;
-using EventsHub.Application.Interfaces;
+using EventsHub.Application.Interfaces.Repositories;
+using EventsHub.Application.Interfaces.Services;
 using EventsHub.Application.Mappers;
-using EventsHub.Domain.Interfaces;
 
 namespace EventsHub.Application.Services;
 
-public class EventService(IEventRepository repository, IFileStorageService fileStorage) : IEventService
+public class EventService(
+    IEventRepository repository,
+    IFileStorageService fileStorage,
+    IFavouriteRepository favouriteRepository) : IEventService
 {
-    public async Task<IEnumerable<EventDto>> GetAllEventsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EventDto>> GetAllEventsAsync(string? visitorUserId = null, CancellationToken cancellationToken = default)
     {
         var events = await repository.GetAllAsync(cancellationToken);
-        return events.Select(EventMapper.ToDto);
+
+        if (visitorUserId is null)
+            return events.Select(e => EventMapper.ToDto(e));
+
+        var favouriteIds = await favouriteRepository.GetFavouriteEventIdsAsync(visitorUserId, cancellationToken);
+        return events.Select(e => EventMapper.ToDto(e, favouriteIds.Contains(e.Id)));
     }
 
-    public async Task<EventDto?> GetEventByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<EventDto?> GetEventByIdAsync(int id, string? visitorUserId = null, CancellationToken cancellationToken = default)
     {
         var @event = await repository.GetByIdAsync(id, cancellationToken);
-        return @event is null ? null : EventMapper.ToDto(@event);
+        if (@event is null) return null;
+
+        if (visitorUserId is null)
+            return EventMapper.ToDto(@event);
+
+        var existing = await favouriteRepository.GetAsync(visitorUserId, id, cancellationToken);
+        return EventMapper.ToDto(@event, existing is not null);
     }
 
     public async Task<EventDto> CreateEventAsync(CreateEventDto dto, CancellationToken cancellationToken = default)

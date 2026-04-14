@@ -1,12 +1,15 @@
 using EventsHub.Domain.Entities;
+using EventsHub.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventsHub.Infrastructure.Persistence;
 
-public class EventsHubDbContext(DbContextOptions<EventsHubDbContext> options) : DbContext(options)
+public class EventsHubDbContext(DbContextOptions<EventsHubDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Favourite> Favourites => Set<Favourite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +63,26 @@ public class EventsHubDbContext(DbContextOptions<EventsHubDbContext> options) : 
                 .WithMany(c => c.Events)
                 .HasForeignKey(e => e.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Favourite>(entity =>
+        {
+            entity.HasKey(f => f.Id);
+
+            entity.Property(f => f.UserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(f => f.CreatedAt)
+                .IsRequired();
+
+            entity.HasIndex(f => new { f.UserId, f.EventId })
+                .IsUnique();
+
+            entity.HasOne(f => f.Event)
+                .WithMany()
+                .HasForeignKey(f => f.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Category>().HasData(

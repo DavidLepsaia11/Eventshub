@@ -12,5 +12,6 @@ public record EventDto(
     int CategoryId,
     string CategoryName,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    bool? IsFavourited
 );

@@ -1,6 +1,6 @@
 using EventsHub.Application.DTOs;
-using EventsHub.Application.Interfaces;
-using EventsHub.Domain.Interfaces;
+using EventsHub.Application.Interfaces.Repositories;
+using EventsHub.Application.Interfaces.Services;
 
 namespace EventsHub.Application.Services;
 

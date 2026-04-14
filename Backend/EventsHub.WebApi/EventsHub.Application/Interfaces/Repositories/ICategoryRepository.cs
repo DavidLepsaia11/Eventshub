@@ -1,6 +1,6 @@
 using EventsHub.Domain.Entities;
 
-namespace EventsHub.Domain.Interfaces;
+namespace EventsHub.Application.Interfaces.Repositories;
 
 public interface ICategoryRepository
 {
