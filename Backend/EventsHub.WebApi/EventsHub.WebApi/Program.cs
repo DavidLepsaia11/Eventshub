@@ -1,7 +1,7 @@
 using System.Text;
-using EventsHub.Application.Interfaces;
+using EventsHub.Application.Interfaces.Repositories;
+using EventsHub.Application.Interfaces.Services;
 using EventsHub.Application.Services;
-using EventsHub.Domain.Interfaces;
 using EventsHub.Infrastructure.Identity;
 using EventsHub.Infrastructure.Persistence;
 using EventsHub.Infrastructure.Repositories;
@@ -64,6 +64,8 @@ builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IFavouriteRepository, FavouriteRepository>();
+builder.Services.AddScoped<IFavouriteService, FavouriteService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
@@ -83,7 +85,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Auto-apply migrations + seed roles and admin user
+// Auto-apply migrations + seed roles and default admin user
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<EventsHubDbContext>();
@@ -99,7 +101,7 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(role));
     }
 
-    // Seed default admin
+    // Seed default admin user
     const string adminEmail = "admin@eventshub.com";
     if (await userManager.FindByEmailAsync(adminEmail) == null)
     {
@@ -127,8 +129,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("FrontendPolicy");
-app.UseAuthentication();
+app.UseAuthentication();    // Must come before UseAuthorization
 app.UseAuthorization();
 app.MapControllers();
-
 app.Run();

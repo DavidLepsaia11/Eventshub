@@ -1,5 +1,5 @@
+using EventsHub.Application.Interfaces.Repositories;
 using EventsHub.Domain.Entities;
-using EventsHub.Domain.Interfaces;
 using EventsHub.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

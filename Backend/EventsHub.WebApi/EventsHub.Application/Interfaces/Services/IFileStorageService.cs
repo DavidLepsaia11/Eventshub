@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace EventsHub.Application.Interfaces;
+namespace EventsHub.Application.Interfaces.Services;
 
 public interface IFileStorageService
 {

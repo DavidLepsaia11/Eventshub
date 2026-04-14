@@ -70,11 +70,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\PCZONE.GE\\OneDrive-CaucasusUniversity\\Desktop\\EventsProjectAI\\Backend\\EventsHub.WebApi\\EventsHub.WebApi\\EventsHub.WebApi.csproj",
+      "projectUniqueName": "C:\\Users\\PCZONE.GE\\source\\repos\\Eventshub\\Backend\\EventsHub.WebApi\\EventsHub.WebApi\\EventsHub.WebApi.csproj",
       "projectName": "EventsHub.WebApi",
-      "projectPath": "C:\\Users\\PCZONE.GE\\OneDrive-CaucasusUniversity\\Desktop\\EventsProjectAI\\Backend\\EventsHub.WebApi\\EventsHub.WebApi\\EventsHub.WebApi.csproj",
+      "projectPath": "C:\\Users\\PCZONE.GE\\source\\repos\\Eventshub\\Backend\\EventsHub.WebApi\\EventsHub.WebApi\\EventsHub.WebApi.csproj",
       "packagesPath": "C:\\Users\\PCZONE.GE\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\PCZONE.GE\\OneDrive-CaucasusUniversity\\Desktop\\EventsProjectAI\\Backend\\EventsHub.WebApi\\EventsHub.WebApi\\obj\\",
+      "outputPath": "C:\\Users\\PCZONE.GE\\source\\repos\\Eventshub\\Backend\\EventsHub.WebApi\\EventsHub.WebApi\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -95,11 +95,11 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\PCZONE.GE\\OneDrive-CaucasusUniversity\\Desktop\\EventsProjectAI\\Backend\\EventsHub.WebApi\\EventsHub.Application\\EventsHub.Application.csproj": {
-              "projectPath": "C:\\Users\\PCZONE.GE\\OneDrive-CaucasusUniversity\\Desktop\\EventsProjectAI\\Backend\\EventsHub.WebApi\\EventsHub.Application\\EventsHub.Application.csproj"
+            "C:\\Users\\PCZONE.GE\\source\\repos\\Eventshub\\Backend\\EventsHub.WebApi\\EventsHub.Application\\EventsHub.Application.csproj": {
+              "projectPath": "C:\\Users\\PCZONE.GE\\source\\repos\\Eventshub\\Backend\\EventsHub.WebApi\\EventsHub.Application\\EventsHub.Application.csproj"
             },
-            "C:\\Users\\PCZONE.GE\\OneDrive-CaucasusUniversity\\Desktop\\EventsProjectAI\\Backend\\EventsHub.WebApi\\EventsHub.Infrastructure\\EventsHub.Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\PCZONE.GE\\OneDrive-CaucasusUniversity\\Desktop\\EventsProjectAI\\Backend\\EventsHub.WebApi\\EventsHub.Infrastructure\\EventsHub.Infrastructure.csproj"
+            "C:\\Users\\PCZONE.GE\\source\\repos\\Eventshub\\Backend\\EventsHub.WebApi\\EventsHub.Infrastructure\\EventsHub.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\PCZONE.GE\\source\\repos\\Eventshub\\Backend\\EventsHub.WebApi\\EventsHub.Infrastructure\\EventsHub.Infrastructure.csproj"
             }
           }
         }

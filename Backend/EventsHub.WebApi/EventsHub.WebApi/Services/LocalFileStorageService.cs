@@ -1,4 +1,4 @@
-using EventsHub.Application.Interfaces;
+using EventsHub.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Http;
 
 namespace EventsHub.WebApi.Services;
