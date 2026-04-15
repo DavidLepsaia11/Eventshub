@@ -32,7 +32,7 @@ public class FavouriteRepository(EventsHubDbContext context) : IFavouriteReposit
             .Where(f => f.UserId == userId)
             .OrderByDescending(f => f.CreatedAt)
             .Include(f => f.Event!)
-                .ThenInclude(e => e.Category)
+            .ThenInclude(e => e.Category)
             .Select(f => f.Event!)
             .ToListAsync(cancellationToken);
     }

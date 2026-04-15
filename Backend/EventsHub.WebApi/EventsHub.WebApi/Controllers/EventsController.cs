@@ -11,17 +11,25 @@ namespace EventsHub.WebApi.Controllers;
 [Produces("application/json")]
 public class EventsController(IEventService eventService) : ControllerBase
 {
-    /// <summary>Gets all events. Includes IsFavourited flag when a Visitor is signed in.</summary>
+    /// <summary>
+    /// Gets a page of events (default 20 per page).
+    /// Admin: all events regardless of IsPublished.
+    /// Visitor / anonymous: only published events. IsFavourited flag included when Visitor is signed in.
+    /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<EventDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResultDto<EventDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
+        var onlyPublished = !User.IsInRole("Admin");
         var visitorUserId = GetVisitorUserId();
-        var events = await eventService.GetAllEventsAsync(visitorUserId, cancellationToken);
-        return Ok(events);
+        var result = await eventService.GetAllEventsAsync(page, pageSize, onlyPublished, visitorUserId, cancellationToken);
+        return Ok(result);
     }
 
-    /// <summary>Gets a single event by ID. Includes IsFavourited flag when a Visitor is signed in.</summary>
+    /// <summary>
+    /// Gets a single event by ID.
+    /// Admin: can see unpublished events. Visitor / anonymous: 404 if not published.
+    /// </summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(EventDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -35,7 +43,6 @@ public class EventsController(IEventService eventService) : ControllerBase
     /// <summary>Creates a new event.</summary>
     [Authorize(Roles = "Admin")]
     [HttpPost]
-    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(EventDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromForm] CreateEventDto dto, CancellationToken cancellationToken)
@@ -47,7 +54,6 @@ public class EventsController(IEventService eventService) : ControllerBase
     /// <summary>Updates an existing event.</summary>
     [Authorize(Roles = "Admin")]
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(EventDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -60,7 +66,6 @@ public class EventsController(IEventService eventService) : ControllerBase
     /// <summary>Deletes an event.</summary>
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
@@ -69,6 +74,7 @@ public class EventsController(IEventService eventService) : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
+    // Returns the user ID only when the caller is a Visitor (not Admin, not anonymous).
     private string? GetVisitorUserId() =>
         User.Identity?.IsAuthenticated == true && User.IsInRole("Visitor")
             ? User.FindFirstValue(ClaimTypes.NameIdentifier)

@@ -2,7 +2,7 @@
 // All API calls for the /api/events resource.
 // Base URL is read exclusively from import.meta.env.VITE_API_URL — never hardcoded.
 
-import type { EventDto, CreateEventDto, UpdateEventDto, CategoryDto } from '@/types/event';
+import type { EventDto, CreateEventDto, UpdateEventDto, CategoryDto, PagedResultDto } from '@/types/event';
 
 const BASE = import.meta.env.VITE_API_URL as string;
 
@@ -28,7 +28,17 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     let message = res.statusText;
     try {
       const body = await res.json();
-      message = body?.message ?? body?.title ?? message;
+      // ASP.NET Core model validation returns { errors: { Field: ["msg", ...] } }
+      if (body?.errors && typeof body.errors === 'object') {
+        const messages = Object.values(body.errors as Record<string, string[]>)
+          .flat()
+          .filter(Boolean);
+        if (messages.length > 0) {
+          message = messages.join(' · ');
+        }
+      } else {
+        message = body?.message ?? body?.title ?? message;
+      }
     } catch {
       // ignore parse errors
     }
@@ -45,9 +55,28 @@ export function fetchCategories(): Promise<CategoryDto[]> {
   return request<CategoryDto[]>('/api/categories');
 }
 
-// GET /api/events
-export function fetchEvents(): Promise<EventDto[]> {
-  return request<EventDto[]>('/api/events');
+// GET /api/events?page=&pageSize=
+export function fetchEvents(page = 1, pageSize = 20): Promise<PagedResultDto<EventDto>> {
+  return request<PagedResultDto<EventDto>>(`/api/events?page=${page}&pageSize=${pageSize}`);
+}
+
+// GET /api/events — fetches ALL events in one shot (used when a client-side filter is active).
+// The backend does not support search/category query params, so the only correct way to filter
+// across all pages is to request the full dataset. Call this only when filtering is active.
+export async function fetchAllEvents(): Promise<EventDto[]> {
+  // First request with a large pageSize to get totalCount, then fetch remaining if needed.
+  const first = await request<PagedResultDto<EventDto>>('/api/events?page=1&pageSize=200');
+  if (first.totalCount <= 200) return first.items;
+
+  // More than 200 events: fetch the rest page by page (edge case for large datasets)
+  const remaining: EventDto[] = [...first.items];
+  const totalPages = Math.ceil(first.totalCount / 200);
+  const requests = Array.from({ length: totalPages - 1 }, (_, i) =>
+    request<PagedResultDto<EventDto>>(`/api/events?page=${i + 2}&pageSize=200`),
+  );
+  const pages = await Promise.all(requests);
+  for (const p of pages) remaining.push(...p.items);
+  return remaining;
 }
 
 // GET /api/events/:id

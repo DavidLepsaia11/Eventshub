@@ -7,13 +7,32 @@ namespace EventsHub.Infrastructure.Repositories;
 
 public class EventRepository(EventsHubDbContext context) : IEventRepository
 {
-    public async Task<IEnumerable<Event>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<(IEnumerable<Event> Items, int TotalCount)> GetAllAsync(
+        int page,
+        int pageSize,
+        bool onlyPublished = false,
+        CancellationToken cancellationToken = default)
     {
-        return await context.Events
+        IQueryable<Event> query = context.Events
             .AsNoTracking()
             .Include(e => e.Category)
-            .OrderByDescending(e => e.StartDate)
+            .OrderBy(e => e.StartDate);
+
+        if (onlyPublished)
+            query = query
+                    .Where(e => e.IsPublished)
+                    .OrderBy(e => e.StartDate);
+        else
+            query = query.OrderBy(e => e.CreatedAt);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
     public async Task<Event?> GetByIdAsync(int id, CancellationToken cancellationToken = default)

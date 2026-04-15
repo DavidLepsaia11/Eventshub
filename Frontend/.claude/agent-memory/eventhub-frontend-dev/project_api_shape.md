@@ -39,6 +39,18 @@ Backend runs at http://localhost:5000. All endpoints are under /api/events.
 - PUT    /api/events/{id}   → EventDto
 - DELETE /api/events/{id}   → 204 No Content
 
-**Note:** No auth/token endpoints exist yet. No published-only filter on GET /api/events — all events are returned; client-side filtering handles published vs draft.
+**Favourites API** (src/api/favourites.ts) — requires Bearer token:
+- POST /api/Favourites/{eventId}/toggle → { eventId, isFavourited }
+- GET  /api/Favourites → EventDto[]
+- EventDto.isFavourited?: boolean | null
 
-**How to apply:** Types live in src/types/event.ts. API calls in src/api/events.ts only.
+**Attendance (Going) API** (src/api/attendance.ts) — requires Bearer token:
+- POST /api/EventAttendance/{eventId}/toggle → { eventId, isGoing }
+- GET  /api/EventAttendance → EventDto[]
+- EventDto.isGoing?: boolean | null
+
+**Query keys:** ['events', 'paged', page] | ['events', 'all'] | ['categories'] | ['favourites'] | ['going']
+
+**Note:** No published-only filter on GET /api/events — all events returned; client-side handles published vs draft.
+
+**How to apply:** Types live in src/types/event.ts. Favourites API in src/api/favourites.ts. Attendance API in src/api/attendance.ts. Core events API in src/api/events.ts.

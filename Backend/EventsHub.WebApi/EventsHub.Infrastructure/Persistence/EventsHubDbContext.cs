@@ -10,6 +10,7 @@ public class EventsHubDbContext(DbContextOptions<EventsHubDbContext> options) : 
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Favourite> Favourites => Set<Favourite>();
+    public DbSet<EventAttendance> Attendances => Set<EventAttendance>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,6 +83,26 @@ public class EventsHubDbContext(DbContextOptions<EventsHubDbContext> options) : 
             entity.HasOne(f => f.Event)
                 .WithMany()
                 .HasForeignKey(f => f.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventAttendance>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+
+            entity.Property(a => a.UserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(a => a.CreatedAt)
+                .IsRequired();
+
+            entity.HasIndex(a => new { a.UserId, a.EventId })
+                .IsUnique();
+
+            entity.HasOne(a => a.Event)
+                .WithMany()
+                .HasForeignKey(a => a.EventId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

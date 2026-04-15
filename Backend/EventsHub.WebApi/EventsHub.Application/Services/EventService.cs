@@ -8,17 +8,34 @@ namespace EventsHub.Application.Services;
 public class EventService(
     IEventRepository repository,
     IFileStorageService fileStorage,
-    IFavouriteRepository favouriteRepository) : IEventService
+    IFavouriteRepository favouriteRepository,
+    IEventAttendanceRepository attendanceRepository) : IEventService
 {
-    public async Task<IEnumerable<EventDto>> GetAllEventsAsync(string? visitorUserId = null, CancellationToken cancellationToken = default)
+    public async Task<PagedResultDto<EventDto>> GetAllEventsAsync(
+        int page,
+        int pageSize,
+        bool onlyPublished = false,
+        string? visitorUserId = null,
+        CancellationToken cancellationToken = default)
     {
-        var events = await repository.GetAllAsync(cancellationToken);
+        var (events, totalCount) = await repository.GetAllAsync(page, pageSize, onlyPublished, cancellationToken);
+
+        IEnumerable<EventDto> dtos;
 
         if (visitorUserId is null)
-            return events.Select(e => EventMapper.ToDto(e));
+        {
+            dtos = events.Select(e => EventMapper.ToDto(e));
+        }
+        else
+        {
+            var favouriteIds = await favouriteRepository.GetFavouriteEventIdsAsync(visitorUserId, cancellationToken);
+            var attendanceIds = await attendanceRepository.GetAttendedEventIdsAsync(visitorUserId, cancellationToken);
+            dtos = events.Select(e => EventMapper.ToDto(e, favouriteIds.Contains(e.Id), attendanceIds.Contains(e.Id)));
+        }
 
-        var favouriteIds = await favouriteRepository.GetFavouriteEventIdsAsync(visitorUserId, cancellationToken);
-        return events.Select(e => EventMapper.ToDto(e, favouriteIds.Contains(e.Id)));
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        return new PagedResultDto<EventDto>(dtos, page, pageSize, totalCount, totalPages);
     }
 
     public async Task<EventDto?> GetEventByIdAsync(int id, string? visitorUserId = null, CancellationToken cancellationToken = default)
@@ -29,8 +46,9 @@ public class EventService(
         if (visitorUserId is null)
             return EventMapper.ToDto(@event);
 
-        var existing = await favouriteRepository.GetAsync(visitorUserId, id, cancellationToken);
-        return EventMapper.ToDto(@event, existing is not null);
+        var favouriteExists = await favouriteRepository.GetAsync(visitorUserId, id, cancellationToken);
+        var attendanceExists = await attendanceRepository.GetAsync(visitorUserId, id, cancellationToken);
+        return EventMapper.ToDto(@event, favouriteExists is not null, attendanceExists is not null);
     }
 
     public async Task<EventDto> CreateEventAsync(CreateEventDto dto, CancellationToken cancellationToken = default)

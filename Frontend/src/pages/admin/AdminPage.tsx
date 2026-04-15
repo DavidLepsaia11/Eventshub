@@ -30,10 +30,12 @@ export default function AdminPage() {
   const [tableSearch, setTableSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<EventDto | null>(null);
 
-  const { data: events, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['events'],
-    queryFn: fetchEvents,
+  const { data: pagedEvents, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['events', 1],
+    queryFn: () => fetchEvents(1, 100),
   });
+
+  const items = pagedEvents?.items ?? [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteEvent(id),
@@ -43,16 +45,16 @@ export default function AdminPage() {
     },
   });
 
-  const tableFiltered = (events ?? []).filter(
+  const tableFiltered = items.filter(
     (e) =>
       tableSearch.trim() === '' ||
       e.title.toLowerCase().includes(tableSearch.toLowerCase()) ||
       e.location.toLowerCase().includes(tableSearch.toLowerCase()),
   );
 
-  const totalCount = events?.length ?? 0;
-  const publishedCount = events?.filter((e) => e.isPublished).length ?? 0;
-  const draftCount = totalCount - publishedCount;
+  const totalCount     = pagedEvents?.totalCount ?? 0;
+  const publishedCount = items.filter((e) => e.isPublished).length;
+  const draftCount     = items.filter((e) => !e.isPublished).length;
 
   return (
     <main className="max-w-[1300px] mx-auto px-7 py-10 pb-20">
@@ -92,7 +94,7 @@ export default function AdminPage() {
         />
         <StatCard
           label="Locations"
-          value={new Set(events?.map((e) => e.location) ?? []).size}
+          value={new Set(items.map((e) => e.location)).size}
           iconClass="bg-violet-50 text-violet-600"
           icon={<MapPin className="w-5 h-5" />}
         />

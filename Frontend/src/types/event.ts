@@ -18,6 +18,8 @@ export interface EventDto {
   category: CategoryDto | null;
   createdAt: string;
   updatedAt: string | null;
+  isFavourited?: boolean | null;
+  isGoing?: boolean | null;
 }
 
 export interface CreateEventDto {
@@ -31,4 +33,12 @@ export interface CreateEventDto {
 }
 
 export interface UpdateEventDto extends CreateEventDto {}
+
+export interface PagedResultDto<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
 

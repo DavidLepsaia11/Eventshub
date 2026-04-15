@@ -1,3 +1,3 @@
 - [EventHub Frontend Stack & Conventions](project_stack.md) — Tech stack, styling (Tailwind), API layer (fetch not axios), routes, and key conventions
-- [EventHub Backend API Shape](project_api_shape.md) — EventDto, CreateEventDto, endpoint signatures
-- [Shared Component Prop APIs](project_component_apis.md) — Badge, EventCard, EventForm, ConfirmDialog, LoadingSpinner, PageHeader prop interfaces
+- [EventHub Backend API Shape](project_api_shape.md) — EventDto, CreateEventDto, Favourites & Attendance endpoint signatures, query keys
+- [Shared Component Prop APIs](project_component_apis.md) — Badge, EventCard (incl. Going button), EventForm, ConfirmDialog, LoadingSpinner, PageHeader prop interfaces

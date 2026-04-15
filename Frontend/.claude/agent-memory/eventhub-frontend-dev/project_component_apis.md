@@ -15,7 +15,11 @@ type: project
 
 **ConfirmDialog** — `isOpen: boolean`, `title`, `message`, `confirmLabel?`, `onConfirm`, `onCancel`, `isLoading?`
 
-**EventCard** — `event: EventDto` — navigates to /events/:id on click, shows deterministic gradient cover based on event.id % 6
+**EventCard** — `event: EventDto`, `showStatus?: boolean`, `isFavourited?: boolean`, `onToggleFavourite?: (id, newState) => void`, `isGoing?: boolean`, `onToggleGoing?: (id, newState) => void`
+- navigates to /events/:id on click, shows deterministic gradient cover based on event.id % 6
+- Heart button (top-right cover): active = red bg; only shown when isVisitor
+- CalendarCheck button (left of heart): active = green bg; only rendered when `onToggleGoing` prop is provided
+- Parent owns canonical state; EventCard never copies props into local state
 
 **EventForm** — `defaultValues?: Partial<EventFormValues>`, `onSubmit: (v) => void`, `onCancel`, `isSubmitting?`, `mode: 'create'|'edit'`
 - EventFormValues = CreateEventDto (title, description, location, startDate, endDate)

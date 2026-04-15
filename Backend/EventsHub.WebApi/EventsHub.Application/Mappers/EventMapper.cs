@@ -5,7 +5,7 @@ namespace EventsHub.Application.Mappers;
 
 public static class EventMapper
 {
-    public static EventDto ToDto(Event @event, bool? isFavourited = null) => new(
+    public static EventDto ToDto(Event @event, bool? isFavourited = null, bool? isGoing = null) => new(
         @event.Id,
         @event.Title,
         @event.Description,
@@ -18,7 +18,8 @@ public static class EventMapper
         @event.Category?.Name ?? string.Empty,
         @event.CreatedAt,
         @event.UpdatedAt,
-        isFavourited);
+        isFavourited,
+        isGoing);
 
     public static Event ToEntity(CreateEventDto dto, string? coverImageUrl) => new()
     {

@@ -1,12 +1,15 @@
 // src/pages/EventDetailPage.tsx
 
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchEvent } from '@/api/events';
+import { toggleFavourite } from '@/api/favourites';
+import { toggleAttendance } from '@/api/attendance';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import Badge from '@/components/Badge';
-import { MapPin, Calendar, Clock, ChevronRight, Edit, ArrowLeft } from 'lucide-react';
+import { MapPin, Calendar, Clock, ChevronRight, Edit, ArrowLeft, Heart, CalendarCheck } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 
@@ -23,7 +26,8 @@ const EMOJIS = ['🎵', '🏆', '🎭', '🎪', '🎨', '💻'];
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isVisitor } = useAuth();
+  const queryClient = useQueryClient();
   const eventId = Number(id);
 
   const { data: event, isLoading, isError, error, refetch } = useQuery({
@@ -31,6 +35,43 @@ export default function EventDetailPage() {
     queryFn: () => fetchEvent(eventId),
     enabled: !isNaN(eventId),
   });
+
+  // Optimistic states for this page's toggle buttons
+  const [favOverride,   setFavOverride]   = useState<boolean | null>(null);
+  const [goingOverride, setGoingOverride] = useState<boolean | null>(null);
+
+  const isFavourited = favOverride   !== null ? favOverride   : (event?.isFavourited ?? false);
+  const isGoing      = goingOverride !== null ? goingOverride : (event?.isGoing      ?? false);
+
+  async function handleToggleFavourite() {
+    const next = !isFavourited;
+    setFavOverride(next);
+    try {
+      await toggleFavourite(eventId);
+      await queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      await queryClient.invalidateQueries({ queryKey: ['favourites'] });
+    } catch {
+      setFavOverride(null); // revert
+    } finally {
+      setFavOverride(null); // let server truth take over after refetch
+    }
+  }
+
+  async function handleToggleGoing() {
+    const next = !isGoing;
+    setGoingOverride(next);
+    try {
+      await toggleAttendance(eventId);
+      await queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      await queryClient.invalidateQueries({ queryKey: ['going'] });
+    } catch {
+      setGoingOverride(null); // revert
+    } finally {
+      setGoingOverride(null); // let server truth take over after refetch
+    }
+  }
 
   if (isLoading) return <LoadingSpinner fullPage />;
 
@@ -75,9 +116,11 @@ export default function EventDetailPage() {
         {/* overlay */}
         <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
         <div className="absolute bottom-5 left-7 right-7 flex items-end justify-between">
-          <Badge variant={event.isPublished ? 'published' : 'draft'} showIcon>
-            {event.isPublished ? 'Published' : 'Draft'}
-          </Badge>
+          {isAdmin && (
+            <Badge variant={event.isPublished ? 'published' : 'draft'} showIcon>
+              {event.isPublished ? 'Published' : 'Draft'}
+            </Badge>
+          )}
           {isAdmin && (
             <button
               onClick={() => navigate(`/admin/events/${event.id}/edit`)}
@@ -187,20 +230,49 @@ export default function EventDetailPage() {
               </div>
             </div>
 
-            {/* Status row */}
-            <div className="flex items-start gap-3.5 py-3">
-              <div className="w-[34px] h-[34px] rounded-xs bg-brand-50 flex items-center justify-center flex-shrink-0">
-                <Calendar className="w-4 h-4 text-brand-600" />
+            {/* Status row — admins see publish status, visitors see favourite/going toggles */}
+            {isAdmin ? (
+              <div className="flex items-start gap-3.5 py-3">
+                <div className="w-[34px] h-[34px] rounded-xs bg-brand-50 flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-4 h-4 text-brand-600" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-[0.4px] mb-0.5">
+                    Status
+                  </p>
+                  <Badge variant={event.isPublished ? 'published' : 'draft'} showIcon>
+                    {event.isPublished ? 'Published' : 'Draft'}
+                  </Badge>
+                </div>
               </div>
-              <div>
-                <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-[0.4px] mb-0.5">
-                  Status
-                </p>
-                <Badge variant={event.isPublished ? 'published' : 'draft'} showIcon>
-                  {event.isPublished ? 'Published' : 'Draft'}
-                </Badge>
+            ) : isVisitor ? (
+              <div className="flex flex-col gap-2.5 py-3">
+                <button
+                  onClick={handleToggleFavourite}
+                  className={[
+                    'w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-sm border text-[13.5px] font-semibold transition-all',
+                    isFavourited
+                      ? 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50',
+                  ].join(' ')}
+                >
+                  <Heart className={`w-[15px] h-[15px] ${isFavourited ? 'fill-red-500 text-red-500' : ''}`} />
+                  {isFavourited ? 'Saved to Favourites' : 'Save to Favourites'}
+                </button>
+                <button
+                  onClick={handleToggleGoing}
+                  className={[
+                    'w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-sm border text-[13.5px] font-semibold transition-all',
+                    isGoing
+                      ? 'bg-green-50 border-green-300 text-green-600 hover:bg-green-100'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50',
+                  ].join(' ')}
+                >
+                  <CalendarCheck className="w-[15px] h-[15px]" />
+                  {isGoing ? 'Going ✓' : "I'm Going"}
+                </button>
               </div>
-            </div>
+            ) : null}
           </div>
 
           {/* Actions */}

@@ -10,6 +10,8 @@ import EventDetailPage from '@/pages/EventDetailPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 
+import FavouritesPage from '@/pages/FavouritesPage';
+import GoingPage from '@/pages/GoingPage';
 import AdminPage from '@/pages/admin/AdminPage';
 import AdminEventFormPage from '@/pages/admin/AdminEventFormPage';
 
@@ -23,6 +25,12 @@ export default function App() {
         <Route path="/events/:id" element={<EventDetailPage />} />
         <Route path="/login"      element={<LoginPage />} />
         <Route path="/register"   element={<RegisterPage />} />
+
+        {/* Visitor protected */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/favourites" element={<FavouritesPage />} />
+          <Route path="/going"      element={<GoingPage />} />
+        </Route>
 
         {/* Admin only */}
         <Route element={<AdminRoute />}>

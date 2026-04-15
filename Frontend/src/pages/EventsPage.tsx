@@ -3,14 +3,17 @@
 // Admin view    → admins (all events with published/draft filter)
 
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MapPin, Calendar, Zap, Sparkles,
   Music2, Trophy, Drama, Tent, Palette, Cpu,
   UtensilsCrossed, Laugh, Briefcase, HeartPulse,
+  ChevronLeft, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
-import { fetchEvents, fetchCategories } from '@/api/events';
+import { fetchEvents, fetchAllEvents, fetchCategories } from '@/api/events';
+import { toggleFavourite } from '@/api/favourites';
+import { toggleAttendance } from '@/api/attendance';
 import { useAuth } from '@/context/AuthContext';
 import EventCard from '@/components/EventCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -36,29 +39,141 @@ function getCategoryIcon(name: string): LucideIcon {
 
 // ─── Explore view (guests & visitors) ────────────────────────────────────────
 
-function ExploreView() {
-  const [search, setSearch]             = useState('');
-  const [activeCatId, setActiveCatId]   = useState<number | null>(null);
+const PAGE_SIZE = 20;
 
+function ExploreView() {
+  const queryClient = useQueryClient();
+  const [search, setSearch]           = useState('');
+  const [activeCatId, setActiveCatId] = useState<number | null>(null);
+  const [page, setPage]               = useState(1);
+
+  // Whether any filter is currently active — when true we bypass pagination and fetch all events
+  // so the search/category filter sees the full dataset, not just the current page's items.
+  // The backend does not support search/category query params, so this is the only correct approach.
+  const isFiltering = search.trim() !== '' || activeCatId !== null;
+
+  // Reset to page 1 whenever filters change
+  const handleSearchChange = (value: string) => { setSearch(value); setPage(1); };
+  const handleCatChange    = (id: number | null) => { setActiveCatId(id); setPage(1); };
+
+  const [optimisticOverrides, setOptimisticOverrides]     = useState<Map<number, boolean>>(new Map());
+  const [optimisticGoingOverrides, setOptimisticGoingOverrides] = useState<Map<number, boolean>>(new Map());
+
+  // Paginated query — used when no filter is active
   const {
-    data: events, isLoading: eventsLoading, isError: eventsError, error: eventsErr, refetch,
-  } = useQuery({ queryKey: ['events'], queryFn: fetchEvents });
+    data: pagedEvents,
+    isLoading: pagedLoading,
+    isError: pagedError,
+    error: pagedErr,
+    refetch: refetchPaged,
+  } = useQuery({
+    queryKey: ['events', 'paged', page],
+    queryFn: () => fetchEvents(page, PAGE_SIZE),
+    enabled: !isFiltering,
+  });
+
+  // All-events query — used only while a filter is active. The query key includes the search
+  // and category values so React Query re-fetches whenever they change.
+  const {
+    data: allEvents,
+    isLoading: allLoading,
+    isError: allError,
+    error: allErr,
+    refetch: refetchAll,
+  } = useQuery({
+    queryKey: ['events', 'all'],
+    queryFn: fetchAllEvents,
+    enabled: isFiltering,
+    // Keep previous data while a new filter-fetch is in flight to avoid flicker
+    placeholderData: (prev) => prev,
+  });
 
   const {
     data: categories = [], isLoading: catsLoading,
   } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories });
 
-  const published = useMemo(() => (events ?? []).filter((e) => e.isPublished), [events]);
+  // Resolve the data source based on whether we are filtering
+  const eventsLoading = isFiltering ? allLoading : pagedLoading;
+  const eventsError   = isFiltering ? allError   : pagedError;
+  const eventsErr     = isFiltering ? allErr      : pagedErr;
+  const refetch       = isFiltering ? refetchAll  : refetchPaged;
 
-  const filtered = useMemo(() => {
-    return published
+  // When filtering: apply client-side filter to the full dataset, paginate the result ourselves
+  // When not filtering: server already paginated, just use items as-is
+  const filteredAll = useMemo(() => {
+    if (!isFiltering) return null; // unused in this branch
+    const pool = allEvents ?? [];
+    return pool
       .filter((e) => {
         const q = search.trim().toLowerCase();
         return q === '' || e.title.toLowerCase().includes(q) || e.location.toLowerCase().includes(q);
       })
-      .filter((e) => activeCatId === null || e.categoryId === activeCatId)
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-  }, [published, search, activeCatId]);
+      .filter((e) => activeCatId === null || e.categoryId === activeCatId);
+  }, [allEvents, search, activeCatId, isFiltering]);
+
+  // Pagination values differ by mode
+  const serverTotalPages = pagedEvents?.totalPages ?? 1;
+  const serverTotalCount = pagedEvents?.totalCount ?? 0;
+  const serverItems      = pagedEvents?.items      ?? [];
+
+  const filterTotalCount = filteredAll?.length ?? 0;
+  const filterTotalPages = Math.max(1, Math.ceil(filterTotalCount / PAGE_SIZE));
+  const filterItems      = filteredAll
+    ? filteredAll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    : [];
+
+  const items      = isFiltering ? filterItems      : serverItems;
+  const totalPages = isFiltering ? filterTotalPages : serverTotalPages;
+  const totalCount = isFiltering ? filterTotalCount : serverTotalCount;
+
+  function isFavourited(eventId: number, serverValue: boolean | null | undefined): boolean {
+    if (optimisticOverrides.has(eventId)) return optimisticOverrides.get(eventId)!;
+    return serverValue ?? false;
+  }
+
+  function isGoingHelper(eventId: number, serverValue: boolean | null | undefined): boolean {
+    if (optimisticGoingOverrides.has(eventId)) return optimisticGoingOverrides.get(eventId)!;
+    return serverValue ?? false;
+  }
+
+  async function handleToggleFavourite(eventId: number, newState: boolean) {
+    setOptimisticOverrides((prev) => new Map(prev).set(eventId, newState));
+    try {
+      await toggleFavourite(eventId);
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      setOptimisticOverrides((prev) => {
+        const next = new Map(prev);
+        next.delete(eventId);
+        return next;
+      });
+    } catch {
+      setOptimisticOverrides((prev) => {
+        const next = new Map(prev);
+        next.delete(eventId);
+        return next;
+      });
+    }
+  }
+
+  async function handleToggleGoing(eventId: number, newState: boolean) {
+    setOptimisticGoingOverrides((prev) => new Map(prev).set(eventId, newState));
+    try {
+      await toggleAttendance(eventId);
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      await queryClient.invalidateQueries({ queryKey: ['going'] });
+      setOptimisticGoingOverrides((prev) => {
+        const next = new Map(prev);
+        next.delete(eventId);
+        return next;
+      });
+    } catch {
+      setOptimisticGoingOverrides((prev) => {
+        const next = new Map(prev);
+        next.delete(eventId);
+        return next;
+      });
+    }
+  }
 
   return (
     <main>
@@ -77,7 +192,7 @@ function ExploreView() {
           {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-[12.5px] font-semibold text-white/80 mb-[22px] backdrop-blur-sm">
             <Zap className="w-[13px] h-[13px] text-blue-400" />
-            {published.length > 0 ? `${published.length} events happening` : 'Discover amazing events'}
+            {totalCount > 0 ? `${totalCount} events happening` : 'Discover amazing events'}
           </div>
 
           <h1 className="text-[52px] font-black text-white tracking-[-1.5px] leading-[1.12] max-w-[640px] mb-[18px]">
@@ -99,7 +214,7 @@ function ExploreView() {
               <input
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search events, artists, venues…"
                 className="flex-1 border-none outline-none text-[14px] font-[inherit] text-slate-700 placeholder:text-slate-400 bg-transparent"
               />
@@ -129,7 +244,7 @@ function ExploreView() {
             <div className="flex items-center gap-2 flex-wrap">
               {/* All */}
               <button
-                onClick={() => setActiveCatId(null)}
+                onClick={() => handleCatChange(null)}
                 className={[
                   'inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-[1.5px] text-[13px] font-semibold cursor-pointer transition-all duration-[160ms] shadow-xs',
                   activeCatId === null
@@ -148,7 +263,7 @@ function ExploreView() {
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => setActiveCatId(active ? null : cat.id)}
+                    onClick={() => handleCatChange(active ? null : cat.id)}
                     className={[
                       'inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-[1.5px] text-[13px] font-semibold cursor-pointer transition-all duration-[160ms] shadow-xs',
                       active
@@ -172,10 +287,10 @@ function ExploreView() {
           </h2>
           {!eventsLoading && !eventsError && (
             <p className="text-[13px] text-slate-400 mt-0.5">
-              {filtered.length} event{filtered.length !== 1 ? 's' : ''} found
-              {search.trim() !== '' && ` for "${search}"`}
+              {totalCount} event{totalCount !== 1 ? 's' : ''} total
+              {search.trim() !== '' && ` · filtering for "${search}"`}
               {activeCatId !== null && ` in ${categories.find((c) => c.id === activeCatId)?.name ?? 'this category'}`}
-              {' · sorted by date'}
+              {totalPages > 1 && ` · page ${page} of ${totalPages}`}
             </p>
           )}
         </div>
@@ -190,7 +305,7 @@ function ExploreView() {
           />
         )}
 
-        {!eventsLoading && !eventsError && filtered.length === 0 && (
+        {!eventsLoading && !eventsError && items.length === 0 && (
           <div className="text-center py-20 px-6">
             <div className="w-[72px] h-[72px] rounded-xl bg-brand-50 flex items-center justify-center mx-auto mb-5">
               <Calendar className="w-8 h-8 text-brand-600" />
@@ -206,12 +321,49 @@ function ExploreView() {
           </div>
         )}
 
-        {!eventsLoading && !eventsError && filtered.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[22px]">
-            {filtered.map((event) => (
-              <EventCard key={event.id} event={event} showStatus={false} />
-            ))}
-          </div>
+        {!eventsLoading && !eventsError && items.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[22px]">
+              {items.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  showStatus={false}
+                  isFavourited={isFavourited(event.id, event.isFavourited)}
+                  onToggleFavourite={handleToggleFavourite}
+                  isGoing={isGoingHelper(event.id, event.isGoing)}
+                  onToggleGoing={handleToggleGoing}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-10">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-[13px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Prev
+                </button>
+
+                <span className="px-4 py-1.5 text-[13px] font-semibold text-slate-700">
+                  {page} / {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-[13px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>
@@ -223,15 +375,52 @@ function ExploreView() {
 function AdminView() {
   const [search, setSearch]             = useState('');
   const [filterPublished, setFilterPublished] = useState<'all' | 'published' | 'draft'>('all');
+  const [page, setPage]                 = useState(1);
 
-  const { data: events, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['events'],
-    queryFn: fetchEvents,
+  // Filter is active when the user has typed a search term OR narrowed by published status.
+  // In either case we must fetch ALL events client-side because the backend has no filter params.
+  const isFiltering = search.trim() !== '' || filterPublished !== 'all';
+
+  const handleSearchChange = (value: string) => { setSearch(value); setPage(1); };
+  const handleFilterChange = (f: 'all' | 'published' | 'draft') => { setFilterPublished(f); setPage(1); };
+
+  // Paginated query — active when no filter is applied
+  const {
+    data: pagedEvents,
+    isLoading: pagedLoading,
+    isError: pagedError,
+    error: pagedErr,
+    refetch: refetchPaged,
+  } = useQuery({
+    queryKey: ['events', 'admin', 'paged', page],
+    queryFn: () => fetchEvents(page, PAGE_SIZE),
+    enabled: !isFiltering,
   });
 
-  const filtered = useMemo(() => {
-    if (!events) return [];
-    return events.filter((e) => {
+  // Full-dataset query — active only while a filter is in use
+  const {
+    data: allEvents,
+    isLoading: allLoading,
+    isError: allError,
+    error: allErr,
+    refetch: refetchAll,
+  } = useQuery({
+    queryKey: ['events', 'admin', 'all'],
+    queryFn: fetchAllEvents,
+    enabled: isFiltering,
+    placeholderData: (prev) => prev,
+  });
+
+  const isLoading = isFiltering ? allLoading : pagedLoading;
+  const isError   = isFiltering ? allError   : pagedError;
+  const error     = isFiltering ? allErr      : pagedErr;
+  const refetch   = isFiltering ? refetchAll  : refetchPaged;
+
+  // Client-side filtering of the full dataset (only used in filter mode)
+  const filteredAll = useMemo(() => {
+    if (!isFiltering) return null;
+    const pool = allEvents ?? [];
+    return pool.filter((e) => {
       const matchSearch =
         search.trim() === '' ||
         e.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -242,7 +431,21 @@ function AdminView() {
         (filterPublished === 'draft' && !e.isPublished);
       return matchSearch && matchFilter;
     });
-  }, [events, search, filterPublished]);
+  }, [allEvents, search, filterPublished, isFiltering]);
+
+  const serverItems      = pagedEvents?.items      ?? [];
+  const serverTotalPages = pagedEvents?.totalPages ?? 1;
+  const serverTotalCount = pagedEvents?.totalCount ?? 0;
+
+  const filterTotalCount = filteredAll?.length ?? 0;
+  const filterTotalPages = Math.max(1, Math.ceil(filterTotalCount / PAGE_SIZE));
+  const filterItems      = filteredAll
+    ? filteredAll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    : [];
+
+  const filtered   = isFiltering ? filterItems      : serverItems;
+  const totalPages = isFiltering ? filterTotalPages : serverTotalPages;
+  const totalCount = isFiltering ? filterTotalCount : serverTotalCount;
 
   return (
     <main>
@@ -278,7 +481,7 @@ function AdminView() {
               <input
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search events, keywords…"
                 className="flex-1 border-none outline-none text-[14px] font-[inherit] text-slate-700 placeholder:text-slate-400 bg-transparent"
               />
@@ -303,7 +506,7 @@ function AdminView() {
               return (
                 <button
                   key={f}
-                  onClick={() => setFilterPublished(f)}
+                  onClick={() => handleFilterChange(f)}
                   className={[
                     'inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-[1.5px] text-[13px] font-semibold cursor-pointer transition-all duration-[160ms] shadow-xs',
                     active
@@ -325,8 +528,9 @@ function AdminView() {
           </h2>
           {!isLoading && !isError && (
             <p className="text-[13px] text-slate-400 mt-0.5">
-              {filtered.length} event{filtered.length !== 1 ? 's' : ''} found
-              {search.trim() !== '' && ` for "${search}"`}
+              {totalCount} total
+              {search.trim() !== '' && ` · filtering for "${search}"`}
+              {totalPages > 1 && ` · page ${page} of ${totalPages}`}
             </p>
           )}
         </div>
@@ -347,11 +551,37 @@ function AdminView() {
         )}
 
         {!isLoading && !isError && filtered.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[22px]">
-            {filtered.map((event) => (
-              <EventCard key={event.id} event={event} showStatus={true} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[22px]">
+              {filtered.map((event) => (
+                <EventCard key={event.id} event={event} showStatus={true} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-10">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-[13px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Prev
+                </button>
+                <span className="px-4 py-1.5 text-[13px] font-semibold text-slate-700">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-[13px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>

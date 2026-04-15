@@ -1,9 +1,11 @@
 // src/components/EventCard.tsx
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Music2, Trophy, Drama, Tent, Palette, Cpu, UtensilsCrossed, Laugh, Briefcase, HeartPulse, type LucideIcon } from 'lucide-react';
+import { MapPin, Calendar, Heart, CalendarCheck, Music2, Trophy, Drama, Tent, Palette, Cpu, UtensilsCrossed, Laugh, Briefcase, HeartPulse, type LucideIcon } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Badge from './Badge';
+import { useAuth } from '@/context/AuthContext';
 import type { EventDto } from '@/types/event';
 
 type BadgeVariant = 'published' | 'draft' | 'brand' | 'amber' | 'red' | 'violet' | 'cyan' | 'slate' | 'green';
@@ -61,6 +63,14 @@ interface EventCardProps {
   /** true → show Published/Draft status badge (admin view)
    *  false (default) → show category badge (explore view) */
   showStatus?: boolean;
+  /** initial favourite state — passed from parent which owns the fav set */
+  isFavourited?: boolean;
+  /** called after optimistic toggle so parent can sync its set */
+  onToggleFavourite?: (eventId: number, newState: boolean) => void;
+  /** initial going state — passed from parent which owns the going set */
+  isGoing?: boolean;
+  /** called after optimistic toggle so parent can sync its set; only provide for visitor context */
+  onToggleGoing?: (eventId: number, newState: boolean) => void;
 }
 
 function formatDateRange(start: string, end: string): string {
@@ -72,10 +82,41 @@ function formatDateRange(start: string, end: string): string {
   return `${format(s, 'MMM d')} – ${format(e, 'MMM d, yyyy')}`;
 }
 
-export default function EventCard({ event, showStatus = false }: EventCardProps) {
+export default function EventCard({ event, showStatus = false, isFavourited = false, onToggleFavourite, isGoing = false, onToggleGoing }: EventCardProps) {
   const navigate = useNavigate();
+  const { isVisitor } = useAuth();
   const meta = getCategoryMeta(event.category?.name, event.id);
   const CategoryIcon = meta.icon;
+
+  // No local copy of isFavourited/isGoing — the parent owns the canonical state.
+  // Using useState() would capture the initial (often false) value
+  // and never update when the prop changes after the query resolves.
+  const [togglingFav, setTogglingFav] = useState(false);
+  const [togglingGoing, setTogglingGoing] = useState(false);
+
+  async function handleHeartClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (togglingFav) return;
+    const next = !isFavourited;
+    setTogglingFav(true);
+    try {
+      onToggleFavourite?.(event.id, next);
+    } finally {
+      setTogglingFav(false);
+    }
+  }
+
+  async function handleGoingClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (togglingGoing) return;
+    const next = !isGoing;
+    setTogglingGoing(true);
+    try {
+      onToggleGoing?.(event.id, next);
+    } finally {
+      setTogglingGoing(false);
+    }
+  }
 
   return (
     <article
@@ -104,13 +145,48 @@ export default function EventCard({ event, showStatus = false }: EventCardProps)
             </Badge>
           ) : (
             event.category && (
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold backdrop-blur-sm bg-white/20 border border-white/25 text-white`}>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold backdrop-blur-sm bg-white/20 border border-white/25 text-white">
                 <CategoryIcon className="w-3 h-3" />
                 {event.category.name}
               </span>
             )
           )}
         </div>
+
+        {/* Action buttons — Visitors only */}
+        {isVisitor && (
+          <div className="absolute top-[10px] right-[10px] flex items-center gap-1.5">
+            {/* Going button — only when parent provides the handler */}
+            {onToggleGoing && (
+              <button
+                onClick={handleGoingClick}
+                disabled={togglingGoing}
+                className={[
+                  'w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-150',
+                  isGoing
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : 'bg-white/20 backdrop-blur-sm border-white/25 text-white hover:bg-white/35',
+                ].join(' ')}
+              >
+                <CalendarCheck className="w-[14px] h-[14px]" />
+              </button>
+            )}
+
+            {/* Heart / favourite button */}
+            <button
+              onClick={handleHeartClick}
+              disabled={togglingFav}
+              className={[
+                'w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-150',
+                isFavourited
+                  ? 'bg-red-500 border-red-500 text-white'
+                  : 'bg-white/20 backdrop-blur-sm border-white/25 text-white hover:bg-white/35',
+              ].join(' ')}
+            >
+              <Heart className={`w-[14px] h-[14px] ${isFavourited ? 'fill-white' : ''}`} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Body */}

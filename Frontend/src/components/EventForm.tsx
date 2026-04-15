@@ -124,9 +124,10 @@ export default function EventForm({
 
           {/* Description */}
           <div>
-            <FieldLabel icon={<AlignLeft className="w-[13px] h-[13px]" />} label="Description" />
+            <FieldLabel icon={<AlignLeft className="w-[13px] h-[13px]" />} label="Description" required />
             <textarea
               {...register('description', {
+                required: 'Description is required',
                 maxLength: { value: 2000, message: 'Max 2000 characters' },
               })}
               rows={5}

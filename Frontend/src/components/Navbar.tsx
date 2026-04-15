@@ -1,11 +1,11 @@
 // src/components/Navbar.tsx
 
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Calendar, LayoutDashboard, Zap, Shield, LogOut, LogIn, UserPlus } from 'lucide-react';
+import { Calendar, LayoutDashboard, Zap, Shield, LogOut, LogIn, UserPlus, Heart, CalendarCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Navbar() {
-  const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const { isAuthenticated, isAdmin, isVisitor, user, logout } = useAuth();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -41,6 +41,18 @@ export default function Navbar() {
             <Calendar className="w-[15px] h-[15px]" />
             Events
           </NavLink>
+          {isVisitor && (
+            <NavLink to="/favourites" className={linkClass}>
+              <Heart className="w-[15px] h-[15px]" />
+              Favourites
+            </NavLink>
+          )}
+          {isVisitor && (
+            <NavLink to="/going" className={linkClass}>
+              <CalendarCheck className="w-[15px] h-[15px]" />
+              Going
+            </NavLink>
+          )}
           {isAdmin && (
             <NavLink to="/admin" className={linkClass}>
               <LayoutDashboard className="w-[15px] h-[15px]" />
