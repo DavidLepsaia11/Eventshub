@@ -1,3 +1,4 @@
+using EventsHub.Application.Constants;
 using EventsHub.Application.DTOs;
 using EventsHub.Application.Interfaces.Services;
 using EventsHub.Infrastructure.Identity;
@@ -25,7 +26,7 @@ public class AuthService(
             throw new InvalidOperationException(errors);
         }
 
-        await userManager.AddToRoleAsync(user, "Visitor");
+        await userManager.AddToRoleAsync(user, Roles.Visitor);
 
         var roles = await userManager.GetRolesAsync(user);
         var token = tokenService.GenerateToken(user.Id, user.UserName!, user.Email!, roles);

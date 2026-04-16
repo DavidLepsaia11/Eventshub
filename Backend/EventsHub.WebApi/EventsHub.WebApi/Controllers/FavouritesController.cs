@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using EventsHub.Application.Constants;
 using EventsHub.Application.DTOs;
 using EventsHub.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,7 @@ namespace EventsHub.WebApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-[Authorize(Roles = "Visitor")]
+[Authorize(Roles = Roles.Visitor)]
 public class FavouritesController(IFavouriteService favouriteService) : ControllerBase
 {
     /// <summary>Toggles the current visitor's favourite for the given event.</summary>

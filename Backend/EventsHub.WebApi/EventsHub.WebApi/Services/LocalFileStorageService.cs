@@ -15,7 +15,8 @@ public class LocalFileStorageService(IWebHostEnvironment env) : IFileStorageServ
         var uploadsDir = Path.Combine(WebRoot, "uploads", folder);
         Directory.CreateDirectory(uploadsDir);
 
-        var fileName = $"{file.FileName}";
+        var ext = Path.GetExtension(file.FileName);
+        var fileName = $"{Guid.NewGuid()}{ext}";
         var filePath = Path.Combine(uploadsDir, fileName);
 
         await using var stream = File.Create(filePath);

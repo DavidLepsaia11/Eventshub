@@ -60,6 +60,8 @@ public class EventsHubDbContext(DbContextOptions<EventsHubDbContext> options) : 
             entity.Property(e => e.UpdatedAt)
                 .IsRequired(false);
 
+            entity.HasIndex(e => e.StartDate);
+
             entity.HasOne(e => e.Category)
                 .WithMany(c => c.Events)
                 .HasForeignKey(e => e.CategoryId)

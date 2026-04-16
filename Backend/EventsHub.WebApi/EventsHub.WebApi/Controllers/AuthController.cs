@@ -14,14 +14,14 @@ public class AuthController(IAuthService authService, ITokenBlacklistService bla
 {
     /// <summary>Registers a new user. Assigns the Visitor role by default.</summary>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto, CancellationToken cancellationToken)
     {
         try
         {
             var result = await authService.RegisterAsync(dto, cancellationToken);
-            return Ok(result);
+            return StatusCode(StatusCodes.Status201Created, result);
         }
         catch (InvalidOperationException ex)
         {

@@ -12,8 +12,8 @@ public class EventAttendanceService(
 {
     public async Task<ToggleAttendanceResponseDto?> ToggleAsync(string userId, int eventId, CancellationToken cancellationToken = default)
     {
-        var @event = await eventRepository.GetByIdAsync(eventId, cancellationToken);
-        if (@event is null) return null;
+        if (!await eventRepository.ExistsAsync(eventId, cancellationToken))
+            return null;
 
         var existing = await attendanceRepository.GetAsync(userId, eventId, cancellationToken);
 

@@ -18,6 +18,9 @@ public class EventService(
         string? visitorUserId = null,
         CancellationToken cancellationToken = default)
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
         var (events, totalCount) = await repository.GetAllAsync(page, pageSize, onlyPublished, cancellationToken);
 
         IEnumerable<EventDto> dtos;

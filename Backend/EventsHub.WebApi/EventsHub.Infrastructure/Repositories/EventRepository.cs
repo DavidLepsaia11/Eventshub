@@ -15,15 +15,20 @@ public class EventRepository(EventsHubDbContext context) : IEventRepository
     {
         IQueryable<Event> query = context.Events
             .AsNoTracking()
-            .Include(e => e.Category)
-            .OrderBy(e => e.StartDate);
+            .Include(e => e.Category);
 
         if (onlyPublished)
+        {
+            // Visitors: published events only, soonest start date first
             query = query
-                    .Where(e => e.IsPublished)
-                    .OrderBy(e => e.StartDate);
+                .Where(e => e.IsPublished)
+                .OrderBy(e => e.StartDate);
+        }
         else
-            query = query.OrderBy(e => e.CreatedAt);
+        {
+            // Admin: all events, most recently created first
+            query = query.OrderByDescending(e => e.CreatedAt);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
 

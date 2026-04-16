@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using EventsHub.Application.Constants;
 using EventsHub.Application.DTOs;
 using EventsHub.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -20,7 +21,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     [ProducesResponseType(typeof(PagedResultDto<EventDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var onlyPublished = !User.IsInRole("Admin");
+        var onlyPublished = !User.IsInRole(Roles.Admin);
         var visitorUserId = GetVisitorUserId();
         var result = await eventService.GetAllEventsAsync(page, pageSize, onlyPublished, visitorUserId, cancellationToken);
         return Ok(result);
@@ -41,7 +42,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     }
 
     /// <summary>Creates a new event.</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ProducesResponseType(typeof(EventDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -52,7 +53,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     }
 
     /// <summary>Updates an existing event.</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = Roles.Admin)]
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(EventDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -64,7 +65,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     }
 
     /// <summary>Deletes an event.</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = Roles.Admin)]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -76,7 +77,7 @@ public class EventsController(IEventService eventService) : ControllerBase
 
     // Returns the user ID only when the caller is a Visitor (not Admin, not anonymous).
     private string? GetVisitorUserId() =>
-        User.Identity?.IsAuthenticated == true && User.IsInRole("Visitor")
+        User.Identity?.IsAuthenticated == true && User.IsInRole(Roles.Visitor)
             ? User.FindFirstValue(ClaimTypes.NameIdentifier)
             : null;
 }

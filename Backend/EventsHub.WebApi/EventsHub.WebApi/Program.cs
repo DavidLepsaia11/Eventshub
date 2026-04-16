@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using EventsHub.Application.Constants;
 using EventsHub.Application.Interfaces.Repositories;
 using EventsHub.Application.Interfaces.Services;
 using EventsHub.Application.Services;
@@ -116,7 +117,7 @@ using (var scope = app.Services.CreateScope())
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
     // Seed roles
-    foreach (var role in new[] { "Admin", "Visitor" })
+    foreach (var role in new[] { Roles.Admin, Roles.Visitor })
     {
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole(role));
@@ -133,7 +134,7 @@ using (var scope = app.Services.CreateScope())
             EmailConfirmed = true
         };
         await userManager.CreateAsync(admin, "Admin123!");
-        await userManager.AddToRoleAsync(admin, "Admin");
+        await userManager.AddToRoleAsync(admin, Roles.Admin);
     }
 }
 
