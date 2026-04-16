@@ -12,7 +12,9 @@
       "Bash(cmd /c \"for /f \\\\\"tokens=5\\\\\" %a in \\('netstat -ano ^| findstr :5175 ^| findstr LISTENING'\\) do taskkill /PID %a /F\")",
       "Bash(cmd /c \"for /f \\\\\"tokens=5\\\\\" %a in \\('netstat -ano ^| findstr :5176 ^| findstr LISTENING'\\) do taskkill /PID %a /F\")",
       "Bash(cmd /c \"type \\\\\"C:\\\\Users\\\\PCZONE.GE\\\\OneDrive-CaucasusUniversity\\\\Desktop\\\\UI-UX-Tempates\\\\EventHub_UI_v2.html\\\\\"\")",
-      "Read(//c/Users/PCZONE.GE/OneDrive-CaucasusUniversity/Desktop/EventsProjectAI/Backend/**)"
+      "Read(//c/Users/PCZONE.GE/OneDrive-CaucasusUniversity/Desktop/EventsProjectAI/Backend/**)",
+      "Bash(head -7 \"C:\\\\Users\\\\PCZONE.GE\\\\OneDrive-CaucasusUniversity\\\\Desktop\\\\EventsProjectAI\\\\Frontend\\\\.claude\\\\agents\\\\software-architect-tech-lead.md\")",
+      "Read(//tmp/**)"
     ]
   }
 }
