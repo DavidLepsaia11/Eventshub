@@ -1,3 +1,4 @@
+// EventsHub.Infrastructure/Repositories/EventRepository.cs
 using EventsHub.Application.Interfaces.Repositories;
 using EventsHub.Domain.Entities;
 using EventsHub.Infrastructure.Persistence;
@@ -11,6 +12,8 @@ public class EventRepository(EventsHubDbContext context) : IEventRepository
         int page,
         int pageSize,
         bool onlyPublished = false,
+        string? search = null,
+        int? categoryId = null,
         CancellationToken cancellationToken = default)
     {
         IQueryable<Event> query = context.Events
@@ -30,6 +33,13 @@ public class EventRepository(EventsHubDbContext context) : IEventRepository
             query = query.OrderByDescending(e => e.CreatedAt);
         }
 
+        // Apply server-side filters BEFORE counting and paging
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(e => e.Title.Contains(search) || e.Location.Contains(search));
+
+        if (categoryId.HasValue)
+            query = query.Where(e => e.CategoryId == categoryId.Value);
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
@@ -38,6 +48,13 @@ public class EventRepository(EventsHubDbContext context) : IEventRepository
             .ToListAsync(cancellationToken);
 
         return (items, totalCount);
+    }
+
+    public async Task<(int Total, int Published, int Drafts)> GetStatsAsync(CancellationToken cancellationToken = default)
+    {
+        var total = await context.Events.AsNoTracking().CountAsync(cancellationToken);
+        var published = await context.Events.AsNoTracking().CountAsync(e => e.IsPublished, cancellationToken);
+        return (total, published, total - published);
     }
 
     public async Task<Event?> GetByIdAsync(int id, CancellationToken cancellationToken = default)

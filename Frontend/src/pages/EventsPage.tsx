@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
-import { fetchEvents, fetchAllEvents, fetchCategories } from '@/api/events';
+import { fetchEvents, fetchCategories } from '@/api/events';
 import { toggleFavourite } from '@/api/favourites';
 import { toggleAttendance } from '@/api/attendance';
 import { useAuth } from '@/context/AuthContext';
@@ -47,11 +47,6 @@ function ExploreView() {
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
   const [page, setPage]               = useState(1);
 
-  // Whether any filter is currently active — when true we bypass pagination and fetch all events
-  // so the search/category filter sees the full dataset, not just the current page's items.
-  // The backend does not support search/category query params, so this is the only correct approach.
-  const isFiltering = search.trim() !== '' || activeCatId !== null;
-
   // Reset to page 1 whenever filters change
   const handleSearchChange = (value: string) => { setSearch(value); setPage(1); };
   const handleCatChange    = (id: number | null) => { setActiveCatId(id); setPage(1); };
@@ -59,32 +54,17 @@ function ExploreView() {
   const [optimisticOverrides, setOptimisticOverrides]     = useState<Map<number, boolean>>(new Map());
   const [optimisticGoingOverrides, setOptimisticGoingOverrides] = useState<Map<number, boolean>>(new Map());
 
-  // Paginated query — used when no filter is active
+  // Single query — server handles search and category filtering via query params.
+  // The query key includes page, search and activeCatId so the cache is properly scoped.
   const {
     data: pagedEvents,
-    isLoading: pagedLoading,
-    isError: pagedError,
-    error: pagedErr,
-    refetch: refetchPaged,
+    isLoading: eventsLoading,
+    isError: eventsError,
+    error: eventsErr,
+    refetch,
   } = useQuery({
-    queryKey: ['events', 'paged', page],
-    queryFn: () => fetchEvents(page, PAGE_SIZE),
-    enabled: !isFiltering,
-  });
-
-  // All-events query — used only while a filter is active. The query key includes the search
-  // and category values so React Query re-fetches whenever they change.
-  const {
-    data: allEvents,
-    isLoading: allLoading,
-    isError: allError,
-    error: allErr,
-    refetch: refetchAll,
-  } = useQuery({
-    queryKey: ['events', 'all'],
-    queryFn: fetchAllEvents,
-    enabled: isFiltering,
-    // Keep previous data while a new filter-fetch is in flight to avoid flicker
+    queryKey: ['events', 'paged', page, search, activeCatId] as const,
+    queryFn: () => fetchEvents(page, PAGE_SIZE, search, activeCatId ?? undefined),
     placeholderData: (prev) => prev,
   });
 
@@ -92,39 +72,9 @@ function ExploreView() {
     data: categories = [], isLoading: catsLoading,
   } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories });
 
-  // Resolve the data source based on whether we are filtering
-  const eventsLoading = isFiltering ? allLoading : pagedLoading;
-  const eventsError   = isFiltering ? allError   : pagedError;
-  const eventsErr     = isFiltering ? allErr      : pagedErr;
-  const refetch       = isFiltering ? refetchAll  : refetchPaged;
-
-  // When filtering: apply client-side filter to the full dataset, paginate the result ourselves
-  // When not filtering: server already paginated, just use items as-is
-  const filteredAll = useMemo(() => {
-    if (!isFiltering) return null; // unused in this branch
-    const pool = allEvents ?? [];
-    return pool
-      .filter((e) => {
-        const q = search.trim().toLowerCase();
-        return q === '' || e.title.toLowerCase().includes(q) || e.location.toLowerCase().includes(q);
-      })
-      .filter((e) => activeCatId === null || e.categoryId === activeCatId);
-  }, [allEvents, search, activeCatId, isFiltering]);
-
-  // Pagination values differ by mode
-  const serverTotalPages = pagedEvents?.totalPages ?? 1;
-  const serverTotalCount = pagedEvents?.totalCount ?? 0;
-  const serverItems      = pagedEvents?.items      ?? [];
-
-  const filterTotalCount = filteredAll?.length ?? 0;
-  const filterTotalPages = Math.max(1, Math.ceil(filterTotalCount / PAGE_SIZE));
-  const filterItems      = filteredAll
-    ? filteredAll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-    : [];
-
-  const items      = isFiltering ? filterItems      : serverItems;
-  const totalPages = isFiltering ? filterTotalPages : serverTotalPages;
-  const totalCount = isFiltering ? filterTotalCount : serverTotalCount;
+  const items      = pagedEvents?.items      ?? [];
+  const totalPages = pagedEvents?.totalPages ?? 1;
+  const totalCount = pagedEvents?.totalCount ?? 0;
 
   function isFavourited(eventId: number, serverValue: boolean | null | undefined): boolean {
     if (optimisticOverrides.has(eventId)) return optimisticOverrides.get(eventId)!;
@@ -377,75 +327,36 @@ function AdminView() {
   const [filterPublished, setFilterPublished] = useState<'all' | 'published' | 'draft'>('all');
   const [page, setPage]                 = useState(1);
 
-  // Filter is active when the user has typed a search term OR narrowed by published status.
-  // In either case we must fetch ALL events client-side because the backend has no filter params.
-  const isFiltering = search.trim() !== '' || filterPublished !== 'all';
-
   const handleSearchChange = (value: string) => { setSearch(value); setPage(1); };
   const handleFilterChange = (f: 'all' | 'published' | 'draft') => { setFilterPublished(f); setPage(1); };
 
-  // Paginated query — active when no filter is applied
+  // Single query — server handles search via query param.
+  // The published/draft chip filter is applied client-side on the fetched page since
+  // the backend does not expose a published-status filter param.
   const {
     data: pagedEvents,
-    isLoading: pagedLoading,
-    isError: pagedError,
-    error: pagedErr,
-    refetch: refetchPaged,
+    isLoading,
+    isError,
+    error,
+    refetch,
   } = useQuery({
-    queryKey: ['events', 'admin', 'paged', page],
-    queryFn: () => fetchEvents(page, PAGE_SIZE),
-    enabled: !isFiltering,
-  });
-
-  // Full-dataset query — active only while a filter is in use
-  const {
-    data: allEvents,
-    isLoading: allLoading,
-    isError: allError,
-    error: allErr,
-    refetch: refetchAll,
-  } = useQuery({
-    queryKey: ['events', 'admin', 'all'],
-    queryFn: fetchAllEvents,
-    enabled: isFiltering,
+    queryKey: ['events', 'admin', 'paged', page, search] as const,
+    queryFn: () => fetchEvents(page, PAGE_SIZE, search),
     placeholderData: (prev) => prev,
   });
 
-  const isLoading = isFiltering ? allLoading : pagedLoading;
-  const isError   = isFiltering ? allError   : pagedError;
-  const error     = isFiltering ? allErr      : pagedErr;
-  const refetch   = isFiltering ? refetchAll  : refetchPaged;
+  const allPageItems = pagedEvents?.items ?? [];
 
-  // Client-side filtering of the full dataset (only used in filter mode)
-  const filteredAll = useMemo(() => {
-    if (!isFiltering) return null;
-    const pool = allEvents ?? [];
-    return pool.filter((e) => {
-      const matchSearch =
-        search.trim() === '' ||
-        e.title.toLowerCase().includes(search.toLowerCase()) ||
-        e.location.toLowerCase().includes(search.toLowerCase());
-      const matchFilter =
-        filterPublished === 'all' ||
-        (filterPublished === 'published' && e.isPublished) ||
-        (filterPublished === 'draft' && !e.isPublished);
-      return matchSearch && matchFilter;
-    });
-  }, [allEvents, search, filterPublished, isFiltering]);
+  // Apply published/draft chip filter on the current page's items.
+  const filtered = useMemo(() => {
+    if (filterPublished === 'all') return allPageItems;
+    return allPageItems.filter((e) =>
+      filterPublished === 'published' ? e.isPublished : !e.isPublished,
+    );
+  }, [allPageItems, filterPublished]);
 
-  const serverItems      = pagedEvents?.items      ?? [];
-  const serverTotalPages = pagedEvents?.totalPages ?? 1;
-  const serverTotalCount = pagedEvents?.totalCount ?? 0;
-
-  const filterTotalCount = filteredAll?.length ?? 0;
-  const filterTotalPages = Math.max(1, Math.ceil(filterTotalCount / PAGE_SIZE));
-  const filterItems      = filteredAll
-    ? filteredAll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-    : [];
-
-  const filtered   = isFiltering ? filterItems      : serverItems;
-  const totalPages = isFiltering ? filterTotalPages : serverTotalPages;
-  const totalCount = isFiltering ? filterTotalCount : serverTotalCount;
+  const totalPages = pagedEvents?.totalPages ?? 1;
+  const totalCount = pagedEvents?.totalCount ?? 0;
 
   return (
     <main>

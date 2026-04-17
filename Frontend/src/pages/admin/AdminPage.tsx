@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchEvents, deleteEvent } from '@/api/events';
+import { fetchEvents, deleteEvent, resolveMediaUrl } from '@/api/events';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import PageHeader from '@/components/PageHeader';
@@ -31,7 +31,7 @@ export default function AdminPage() {
   const [deleteTarget, setDeleteTarget] = useState<EventDto | null>(null);
 
   const { data: pagedEvents, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['events', 1],
+    queryKey: ['events', 'admin', 'table'],
     queryFn: () => fetchEvents(1, 100),
   });
 
@@ -52,9 +52,9 @@ export default function AdminPage() {
       e.location.toLowerCase().includes(tableSearch.toLowerCase()),
   );
 
-  const totalCount     = pagedEvents?.totalCount ?? 0;
-  const publishedCount = items.filter((e) => e.isPublished).length;
-  const draftCount     = items.filter((e) => !e.isPublished).length;
+  const totalCount     = pagedEvents?.totalCount     ?? 0;
+  const publishedCount = pagedEvents?.publishedCount ?? 0;
+  const draftCount     = pagedEvents?.draftCount     ?? 0;
 
   return (
     <main className="max-w-[1300px] mx-auto px-7 py-10 pb-20">
@@ -180,7 +180,7 @@ export default function AdminPage() {
                       <div className="flex items-center gap-3">
                         {event.coverImageUrl ? (
                           <img
-                            src={event.coverImageUrl.startsWith('http') ? event.coverImageUrl : `${import.meta.env.VITE_API_URL}${event.coverImageUrl}`}
+                            src={resolveMediaUrl(event.coverImageUrl)}
                             alt={event.title}
                             className="w-[42px] h-[42px] rounded-sm flex-shrink-0 object-cover"
                           />

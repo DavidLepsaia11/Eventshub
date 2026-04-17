@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchEvent } from '@/api/events';
+import { fetchEvent, resolveMediaUrl } from '@/api/events';
 import { toggleFavourite } from '@/api/favourites';
 import { toggleAttendance } from '@/api/attendance';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -48,13 +48,16 @@ export default function EventDetailPage() {
     setFavOverride(next);
     try {
       await toggleFavourite(eventId);
+      // Invalidate queries — the re-fetch will bring the confirmed server value.
+      // Clear the override only after the cache has been refreshed so there is no
+      // snap-back to the stale value while the new fetch is in flight.
       await queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       await queryClient.invalidateQueries({ queryKey: ['events'] });
       await queryClient.invalidateQueries({ queryKey: ['favourites'] });
+      setFavOverride(null);
     } catch {
-      setFavOverride(null); // revert
-    } finally {
-      setFavOverride(null); // let server truth take over after refetch
+      // Revert optimistic state on failure.
+      setFavOverride(null);
     }
   }
 
@@ -66,10 +69,9 @@ export default function EventDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       await queryClient.invalidateQueries({ queryKey: ['events'] });
       await queryClient.invalidateQueries({ queryKey: ['going'] });
+      setGoingOverride(null);
     } catch {
-      setGoingOverride(null); // revert
-    } finally {
-      setGoingOverride(null); // let server truth take over after refetch
+      setGoingOverride(null);
     }
   }
 
@@ -106,7 +108,7 @@ export default function EventDetailPage() {
       <div className={`w-full h-[380px] rounded-xl overflow-hidden mb-9 flex items-center justify-center text-[100px] relative ${event.coverImageUrl ? 'bg-black' : `bg-gradient-to-br ${GRADIENTS[idx]}`}`}>
         {event.coverImageUrl ? (
           <img
-            src={event.coverImageUrl!.startsWith('http') ? event.coverImageUrl! : `${import.meta.env.VITE_API_URL}${event.coverImageUrl}`}
+            src={resolveMediaUrl(event.coverImageUrl!)}
             alt={event.title}
             className="w-full h-full object-cover"
           />

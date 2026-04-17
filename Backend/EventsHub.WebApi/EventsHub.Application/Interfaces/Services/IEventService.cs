@@ -1,3 +1,4 @@
+// EventsHub.Application/Interfaces/Services/IEventService.cs
 using EventsHub.Application.DTOs;
 
 namespace EventsHub.Application.Interfaces.Services;
@@ -9,6 +10,8 @@ public interface IEventService
         int pageSize = 20,
         bool onlyPublished = false,
         string? visitorUserId = null,
+        string? search = null,
+        int? categoryId = null,
         CancellationToken cancellationToken = default);
 
     Task<EventDto?> GetEventByIdAsync(int id, string? visitorUserId = null, CancellationToken cancellationToken = default);

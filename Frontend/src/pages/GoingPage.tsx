@@ -26,6 +26,7 @@ import {
   subMonths,
 } from 'date-fns';
 import { fetchGoingEvents } from '@/api/attendance';
+import { resolveMediaUrl } from '@/api/events';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import type { EventDto } from '@/types/event';
@@ -182,11 +183,7 @@ function ListView({ events }: ListViewProps) {
           <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
             {event.coverImageUrl ? (
               <img
-                src={
-                  event.coverImageUrl.startsWith('http')
-                    ? event.coverImageUrl
-                    : `${import.meta.env.VITE_API_URL}${event.coverImageUrl}`
-                }
+                src={resolveMediaUrl(event.coverImageUrl)}
                 alt={event.title}
                 className="w-full h-full object-cover"
               />

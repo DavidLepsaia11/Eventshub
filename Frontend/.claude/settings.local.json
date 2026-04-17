@@ -14,7 +14,8 @@
       "Bash(cmd /c \"type \\\\\"C:\\\\Users\\\\PCZONE.GE\\\\OneDrive-CaucasusUniversity\\\\Desktop\\\\UI-UX-Tempates\\\\EventHub_UI_v2.html\\\\\"\")",
       "Read(//c/Users/PCZONE.GE/OneDrive-CaucasusUniversity/Desktop/EventsProjectAI/Backend/**)",
       "Bash(head -7 \"C:\\\\Users\\\\PCZONE.GE\\\\OneDrive-CaucasusUniversity\\\\Desktop\\\\EventsProjectAI\\\\Frontend\\\\.claude\\\\agents\\\\software-architect-tech-lead.md\")",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(ls /c/Users/PCZONE.GE/OneDrive-CaucasusUniversity/Desktop/EventsProjectAI/Frontend/.env*)"
     ]
   }
 }

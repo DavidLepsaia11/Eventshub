@@ -40,5 +40,7 @@ export interface PagedResultDto<T> {
   pageSize: number;
   totalCount: number;
   totalPages: number;
+  publishedCount: number;
+  draftCount: number;
 }
 

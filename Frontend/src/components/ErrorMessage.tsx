@@ -14,12 +14,12 @@ export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
       <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mb-4">
         <AlertCircle className="w-7 h-7 text-red-500" />
       </div>
-      <h3 className="text-base font-700 text-slate-800 mb-2">Something went wrong</h3>
+      <h3 className="text-base font-bold text-slate-800 mb-2">Something went wrong</h3>
       <p className="text-sm text-slate-500 max-w-xs mb-5">{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xs bg-brand-600 text-white text-sm font-600 hover:bg-brand-700 transition-colors shadow-brand"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xs bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors shadow-brand"
         >
           Try again
         </button>

@@ -1,82 +1,29 @@
 // src/api/events.ts
 // All API calls for the /api/events resource.
-// Base URL is read exclusively from import.meta.env.VITE_API_URL — never hardcoded.
+// Shared fetch primitives (BASE, authHeaders, request) live in ./client.
 
 import type { EventDto, CreateEventDto, UpdateEventDto, CategoryDto, PagedResultDto } from '@/types/event';
-
-const BASE = import.meta.env.VITE_API_URL as string;
-
-function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem('eventhub_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const isFormData = options?.body instanceof FormData;
-  const merged: RequestInit = {
-    ...options,
-    headers: {
-      // For FormData let the browser set Content-Type with boundary automatically
-      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...authHeaders(),
-      ...(options?.headers as Record<string, string> | undefined),
-    },
-  };
-  const res = await fetch(`${BASE}${path}`, merged);
-
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const body = await res.json();
-      // ASP.NET Core model validation returns { errors: { Field: ["msg", ...] } }
-      if (body?.errors && typeof body.errors === 'object') {
-        const messages = Object.values(body.errors as Record<string, string[]>)
-          .flat()
-          .filter(Boolean);
-        if (messages.length > 0) {
-          message = messages.join(' · ');
-        }
-      } else {
-        message = body?.message ?? body?.title ?? message;
-      }
-    } catch {
-      // ignore parse errors
-    }
-    throw new Error(message || `Request failed with status ${res.status}`);
-  }
-
-  if (res.status === 204) return undefined as unknown as T;
-
-  return res.json() as Promise<T>;
-}
+import { BASE, request } from './client';
 
 // GET /api/categories
 export function fetchCategories(): Promise<CategoryDto[]> {
   return request<CategoryDto[]>('/api/categories');
 }
 
-// GET /api/events?page=&pageSize=
-export function fetchEvents(page = 1, pageSize = 20): Promise<PagedResultDto<EventDto>> {
-  return request<PagedResultDto<EventDto>>(`/api/events?page=${page}&pageSize=${pageSize}`);
-}
-
-// GET /api/events — fetches ALL events in one shot (used when a client-side filter is active).
-// The backend does not support search/category query params, so the only correct way to filter
-// across all pages is to request the full dataset. Call this only when filtering is active.
-export async function fetchAllEvents(): Promise<EventDto[]> {
-  // First request with a large pageSize to get totalCount, then fetch remaining if needed.
-  const first = await request<PagedResultDto<EventDto>>('/api/events?page=1&pageSize=200');
-  if (first.totalCount <= 200) return first.items;
-
-  // More than 200 events: fetch the rest page by page (edge case for large datasets)
-  const remaining: EventDto[] = [...first.items];
-  const totalPages = Math.ceil(first.totalCount / 200);
-  const requests = Array.from({ length: totalPages - 1 }, (_, i) =>
-    request<PagedResultDto<EventDto>>(`/api/events?page=${i + 2}&pageSize=200`),
-  );
-  const pages = await Promise.all(requests);
-  for (const p of pages) remaining.push(...p.items);
-  return remaining;
+// GET /api/events?page=&pageSize=[&search=][&categoryId=]
+export function fetchEvents(
+  page = 1,
+  pageSize = 20,
+  search?: string,
+  categoryId?: number,
+): Promise<PagedResultDto<EventDto>> {
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  if (search && search.trim() !== '') params.set('search', search.trim());
+  if (categoryId != null) params.set('categoryId', String(categoryId));
+  return request<PagedResultDto<EventDto>>(`/api/events?${params.toString()}`);
 }
 
 // GET /api/events/:id
@@ -135,4 +82,12 @@ export function updateEvent(
 // DELETE /api/events/:id  → 204
 export function deleteEvent(id: number): Promise<void> {
   return request<void>(`/api/events/${id}`, { method: 'DELETE' });
+}
+
+// Resolves a server-relative image path to an absolute URL.
+// Absolute URLs (starting with "http") are returned as-is.
+// Relative paths (e.g. "/uploads/events/image.jpg") are prefixed with the API base URL.
+// This is the ONLY place VITE_API_URL should be used outside of request functions.
+export function resolveMediaUrl(url: string): string {
+  return url.startsWith('http') ? url : `${BASE}${url}`;
 }

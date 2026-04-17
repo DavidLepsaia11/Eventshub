@@ -19,9 +19,10 @@ Vite + React 18 + TypeScript project scaffolded from scratch (not via create-vit
 - fetch() (not axios) — project uses native fetch wrapped in a typed request<T> helper in src/api/events.ts
 
 **API layer:**
-- All calls live in src/api/events.ts
-- Base URL from import.meta.env.VITE_API_URL (set in .env as http://localhost:5000)
-- Typed request<T> helper handles non-ok responses and 204 No Content
+- Shared HTTP primitives (BASE, authHeaders, request<T>) live in src/api/client.ts — the ONLY file that reads import.meta.env.VITE_API_URL
+- All event/category API calls live in src/api/events.ts (imports from ./client; keeps resolveMediaUrl which uses the imported BASE)
+- src/api/favourites.ts and src/api/attendance.ts also import from ./client — no local copies
+- Typed request<T> helper handles non-ok responses (including ASP.NET model validation shape) and 204 No Content
 
 **Tailwind extensions (tailwind.config.js):**
 - brand-600 = #2563EB (primary)

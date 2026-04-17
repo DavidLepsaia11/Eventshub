@@ -19,11 +19,16 @@ public class EventsController(IEventService eventService) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResultDto<EventDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] int? categoryId = null,
+        CancellationToken cancellationToken = default)
     {
         var onlyPublished = !User.IsInRole(Roles.Admin);
         var visitorUserId = GetVisitorUserId();
-        var result = await eventService.GetAllEventsAsync(page, pageSize, onlyPublished, visitorUserId, cancellationToken);
+        var result = await eventService.GetAllEventsAsync(page, pageSize, onlyPublished, visitorUserId, search, categoryId, cancellationToken);
         return Ok(result);
     }
 

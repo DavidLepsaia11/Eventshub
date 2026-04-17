@@ -1,3 +1,5 @@
+
+// EventsHub.Application/DTOs/PagedResultDto.cs
 namespace EventsHub.Application.DTOs;
 
 public record PagedResultDto<T>(
@@ -5,5 +7,7 @@ public record PagedResultDto<T>(
     int Page,
     int PageSize,
     int TotalCount,
-    int TotalPages
+    int TotalPages,
+    int PublishedCount,
+    int DraftCount
 );

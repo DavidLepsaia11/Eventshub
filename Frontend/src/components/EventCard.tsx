@@ -6,6 +6,7 @@ import { MapPin, Calendar, Heart, CalendarCheck, Music2, Trophy, Drama, Tent, Pa
 import { format, parseISO } from 'date-fns';
 import Badge from './Badge';
 import { useAuth } from '@/context/AuthContext';
+import { resolveMediaUrl } from '@/api/events';
 import type { EventDto } from '@/types/event';
 
 type BadgeVariant = 'published' | 'draft' | 'brand' | 'amber' | 'red' | 'violet' | 'cyan' | 'slate' | 'green';
@@ -127,7 +128,7 @@ export default function EventCard({ event, showStatus = false, isFavourited = fa
       <div className="w-full h-[175px] relative overflow-hidden">
         {event.coverImageUrl ? (
           <img
-            src={event.coverImageUrl.startsWith('http') ? event.coverImageUrl : `${import.meta.env.VITE_API_URL}${event.coverImageUrl}`}
+            src={resolveMediaUrl(event.coverImageUrl)}
             alt={event.title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />

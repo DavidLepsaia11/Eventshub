@@ -1,3 +1,4 @@
+// EventsHub.Application/Services/EventService.cs
 using EventsHub.Application.DTOs;
 using EventsHub.Application.Interfaces.Repositories;
 using EventsHub.Application.Interfaces.Services;
@@ -12,16 +13,22 @@ public class EventService(
     IEventAttendanceRepository attendanceRepository) : IEventService
 {
     public async Task<PagedResultDto<EventDto>> GetAllEventsAsync(
-        int page,
-        int pageSize,
+        int page = 1,
+        int pageSize = 20,
         bool onlyPublished = false,
         string? visitorUserId = null,
+        string? search = null,
+        int? categoryId = null,
         CancellationToken cancellationToken = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var (events, totalCount) = await repository.GetAllAsync(page, pageSize, onlyPublished, cancellationToken);
+        search = search?.Trim();
+        if (string.IsNullOrEmpty(search)) search = null;
+
+        var (events, totalCount) = await repository.GetAllAsync(
+            page, pageSize, onlyPublished, search, categoryId, cancellationToken);
 
         IEnumerable<EventDto> dtos;
 
@@ -38,7 +45,16 @@ public class EventService(
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        return new PagedResultDto<EventDto>(dtos, page, pageSize, totalCount, totalPages);
+        int publishedCount = 0;
+        int draftCount = 0;
+        if (!onlyPublished)
+        {
+            var (_, published, drafts) = await repository.GetStatsAsync(cancellationToken);
+            publishedCount = published;
+            draftCount = drafts;
+        }
+
+        return new PagedResultDto<EventDto>(dtos, page, pageSize, totalCount, totalPages, publishedCount, draftCount);
     }
 
     public async Task<EventDto?> GetEventByIdAsync(int id, string? visitorUserId = null, CancellationToken cancellationToken = default)

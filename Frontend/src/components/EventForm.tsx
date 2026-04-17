@@ -7,7 +7,7 @@ import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { FileText, MapPin, Calendar, AlignLeft, Save, X, Eye, ImagePlus, Trash2, Tag } from 'lucide-react';
-import { fetchCategories } from '@/api/events';
+import { fetchCategories, resolveMediaUrl } from '@/api/events';
 
 export interface EventFormValues {
   title: string;
@@ -55,6 +55,7 @@ export default function EventForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<EventFormValues>({ defaultValues });
 
@@ -66,10 +67,8 @@ export default function EventForm({
 
   // Cover image state
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const resolveUrl = (url: string) =>
-    url.startsWith('http') ? url : `${import.meta.env.VITE_API_URL}${url}`;
   const [previewUrl, setPreviewUrl] = useState<string | null>(
-    existingCoverImageUrl ? resolveUrl(existingCoverImageUrl) : null,
+    existingCoverImageUrl ? resolveMediaUrl(existingCoverImageUrl) : null,
   );
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [removeCover, setRemoveCover] = useState(false);
@@ -200,7 +199,14 @@ export default function EventForm({
               <FieldLabel icon={<Calendar className="w-[13px] h-[13px]" />} label="End Date" required />
               <input
                 type="datetime-local"
-                {...register('endDate', { required: 'End date is required' })}
+                {...register('endDate', {
+                  required: 'End date is required',
+                  validate: (v) =>
+                    !v ||
+                    !watch('startDate') ||
+                    new Date(v) > new Date(watch('startDate')) ||
+                    'End date must be after start date',
+                })}
                 className={inputClass(!!errors.endDate)}
               />
               {errors.endDate && (
