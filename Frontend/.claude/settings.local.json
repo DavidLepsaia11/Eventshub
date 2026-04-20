@@ -15,7 +15,8 @@
       "Read(//c/Users/PCZONE.GE/OneDrive-CaucasusUniversity/Desktop/EventsProjectAI/Backend/**)",
       "Bash(head -7 \"C:\\\\Users\\\\PCZONE.GE\\\\OneDrive-CaucasusUniversity\\\\Desktop\\\\EventsProjectAI\\\\Frontend\\\\.claude\\\\agents\\\\software-architect-tech-lead.md\")",
       "Read(//tmp/**)",
-      "Bash(ls /c/Users/PCZONE.GE/OneDrive-CaucasusUniversity/Desktop/EventsProjectAI/Frontend/.env*)"
+      "Bash(ls /c/Users/PCZONE.GE/OneDrive-CaucasusUniversity/Desktop/EventsProjectAI/Frontend/.env*)",
+      "Read(//c/Users/PCZONE.GE/OneDrive-CaucasusUniversity/Desktop/agents/**)"
     ]
   }
 }
