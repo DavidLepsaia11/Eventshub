@@ -43,6 +43,34 @@ public class AuthController(IAuthService authService, ITokenBlacklistService bla
     }
 
     /// <summary>
+    /// Sends a password reset token to the given email address.
+    /// Always returns 200 to prevent email enumeration.
+    /// In development the token is printed to the server console.
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto, CancellationToken cancellationToken)
+    {
+        await authService.ForgotPasswordAsync(dto, cancellationToken);
+        return Ok(new { message = "If that email is registered, a reset token has been sent." });
+    }
+
+    /// <summary>
+    /// Resets the user's password using the token from the forgot-password step.
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto, CancellationToken cancellationToken)
+    {
+        var success = await authService.ResetPasswordAsync(dto, cancellationToken);
+        if (!success)
+            return BadRequest(new { message = "Invalid or expired reset token." });
+
+        return Ok(new { message = "Password has been reset successfully." });
+    }
+
+    /// <summary>
     /// Logs out the current user by revoking the JWT token.
     /// The token remains invalid until its original expiry time.
     /// </summary>

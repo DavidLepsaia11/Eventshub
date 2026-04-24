@@ -8,7 +8,8 @@ namespace EventsHub.Infrastructure.Services;
 
 public class AuthService(
     UserManager<ApplicationUser> userManager,
-    ITokenService tokenService) : IAuthService
+    ITokenService tokenService,
+    IEmailService emailService) : IAuthService
 {
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, CancellationToken cancellationToken = default)
     {
@@ -46,5 +47,29 @@ public class AuthService(
         var token = tokenService.GenerateToken(user.Id, user.UserName!, user.Email!, roles);
 
         return new AuthResponseDto(token, user.Id, user.UserName!, user.Email!, roles);
+    }
+
+    public async Task<bool> ForgotPasswordAsync(ForgotPasswordDto dto, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByEmailAsync(dto.Email);
+
+        // Always return true — never reveal whether the email exists
+        if (user is null)
+            return true;
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        await emailService.SendPasswordResetEmailAsync(user.Email!, token, cancellationToken);
+
+        return true;
+    }
+
+    public async Task<bool> ResetPasswordAsync(ResetPasswordDto dto, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByEmailAsync(dto.Email);
+        if (user is null)
+            return false;
+
+        var result = await userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+        return result.Succeeded;
     }
 }

@@ -89,6 +89,7 @@ builder.Services.AddScoped<IEventAttendanceService, EventAttendanceService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();
 builder.Services.AddMemoryCache();
 

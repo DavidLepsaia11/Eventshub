@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   UserPlus, ShieldCheck, Zap, Gift,
-  User, Mail, Lock, AlertCircle, Loader2,
+  User, Mail, Lock, AlertCircle, Loader2, Eye, EyeOff,
 } from 'lucide-react';
 import { register as registerApi } from '@/api/auth';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +19,8 @@ export default function RegisterPage() {
   const navigate    = useNavigate();
   const { login }   = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
   const {
     register,
@@ -148,24 +150,34 @@ export default function RegisterPage() {
                 <Lock className="w-[13px] h-[13px] text-slate-400" />
                 Password
               </label>
-              <input
-                type="password"
-                placeholder="At least 6 characters"
-                className={[
-                  'w-full px-3.5 py-[10px] border-[1.5px] rounded-[10px] text-[14px] text-slate-800 outline-none transition-all duration-150 bg-white placeholder:text-slate-300',
-                  errors.password
-                    ? 'border-red-400 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(220,38,38,.1)]'
-                    : 'border-slate-200 focus:border-brand-600 focus:shadow-[0_0_0_3px_rgba(37,99,235,.1)]',
-                ].join(' ')}
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: { value: 6, message: 'Minimum 6 characters' },
-                  pattern: {
-                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
-                    message: 'Must contain uppercase, lowercase and a number',
-                  },
-                })}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="At least 6 characters"
+                  className={[
+                    'w-full px-3.5 py-[10px] pr-10 border-[1.5px] rounded-[10px] text-[14px] text-slate-800 outline-none transition-all duration-150 bg-white placeholder:text-slate-300',
+                    errors.password
+                      ? 'border-red-400 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(220,38,38,.1)]'
+                      : 'border-slate-200 focus:border-brand-600 focus:shadow-[0_0_0_3px_rgba(37,99,235,.1)]',
+                  ].join(' ')}
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: { value: 6, message: 'Minimum 6 characters' },
+                    pattern: {
+                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+                      message: 'Must contain uppercase, lowercase and a number',
+                    },
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-[15px] h-[15px]" /> : <Eye className="w-[15px] h-[15px]" />}
+                </button>
+              </div>
               {errors.password
                 ? <p className="text-[11.5px] text-red-500 mt-1.5">{errors.password.message}</p>
                 : <p className="text-[11.5px] text-slate-400 mt-1.5">Use a mix of letters, numbers and symbols for a stronger password.</p>
@@ -178,20 +190,30 @@ export default function RegisterPage() {
                 <Lock className="w-[13px] h-[13px] text-slate-400" />
                 Confirm password
               </label>
-              <input
-                type="password"
-                placeholder="Re-enter your password"
-                className={[
-                  'w-full px-3.5 py-[10px] border-[1.5px] rounded-[10px] text-[14px] text-slate-800 outline-none transition-all duration-150 bg-white placeholder:text-slate-300',
-                  errors.confirmPassword
-                    ? 'border-red-400 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(220,38,38,.1)]'
-                    : 'border-slate-200 focus:border-brand-600 focus:shadow-[0_0_0_3px_rgba(37,99,235,.1)]',
-                ].join(' ')}
-                {...register('confirmPassword', {
-                  required: 'Please confirm your password',
-                  validate: (val) => val === watch('password') || 'Passwords do not match',
-                })}
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Re-enter your password"
+                  className={[
+                    'w-full px-3.5 py-[10px] pr-10 border-[1.5px] rounded-[10px] text-[14px] text-slate-800 outline-none transition-all duration-150 bg-white placeholder:text-slate-300',
+                    errors.confirmPassword
+                      ? 'border-red-400 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(220,38,38,.1)]'
+                      : 'border-slate-200 focus:border-brand-600 focus:shadow-[0_0_0_3px_rgba(37,99,235,.1)]',
+                  ].join(' ')}
+                  {...register('confirmPassword', {
+                    required: 'Please confirm your password',
+                    validate: (val) => val === watch('password') || 'Passwords do not match',
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-[15px] h-[15px]" /> : <Eye className="w-[15px] h-[15px]" />}
+                </button>
+              </div>
               {errors.confirmPassword && (
                 <p className="text-[11.5px] text-red-500 mt-1.5">{errors.confirmPassword.message}</p>
               )}
